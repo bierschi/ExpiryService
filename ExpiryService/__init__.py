@@ -6,5 +6,7 @@ __email__ = "christian.bierschneider@web.de"
 __license__ = "MIT"
 
 import os
+from ExpiryService.routes.router import Router
+from ExpiryService.api import APIHandler
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))

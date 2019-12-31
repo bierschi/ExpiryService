@@ -1,3 +1,3 @@
 
-from credstuffer.notification.mail import Mail
-from credstuffer.notification.telegram import Telegram
+from ExpiryService.notification.mail import Mail
+
