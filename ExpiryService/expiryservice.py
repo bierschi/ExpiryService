@@ -1,8 +1,8 @@
 import logging
 import argparse
 import configparser
-from ExpiryService import Router
-from ExpiryService import APIHandler
+from ExpiryService.routes.router import Router
+from ExpiryService.api import APIHandler
 from ExpiryService.utils import Logger
 #from ExpiryService.beagent import BEAgent
 from ExpiryService import ROOT_DIR
