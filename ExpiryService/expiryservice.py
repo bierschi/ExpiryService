@@ -4,7 +4,7 @@ import configparser
 from ExpiryService.routes.router import Router
 from ExpiryService.api import APIHandler
 from ExpiryService.utils import Logger
-#from ExpiryService.beagent import BEAgent
+from ExpiryService.beagent import BEAgent
 from ExpiryService import ROOT_DIR
 
 config = configparser.ConfigParser()
@@ -22,7 +22,8 @@ class ExpiryService:
         self.version = 'v' + str(version)
 
         # instance for the backend agent
-        #self.beagent = BEAgent(**dbparams)
+        self.beagent = BEAgent(**dbparams)
+
         # handler for specific api calls
         self.api = APIHandler()
 
@@ -42,7 +43,7 @@ class ExpiryService:
         :param port: port for the webserver
         :param debug: debug mode true or false
         """
-
+        self.beagent.start()
         self.router.run(host=host, port=port, debug=debug)
 
 

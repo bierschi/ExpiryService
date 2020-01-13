@@ -41,3 +41,18 @@ class APIHandler(DBHandler):
 
         return Response(status=200, response=json.dumps("API test successful"), mimetype='application/json')
 
+
+    def get_registered_providers(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def add_new_provider(self):
+        """
+
+        :return:
+        """
+        pass
+
