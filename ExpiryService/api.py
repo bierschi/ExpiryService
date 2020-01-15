@@ -42,17 +42,37 @@ class APIHandler(DBHandler):
         return Response(status=200, response=json.dumps("API test successful"), mimetype='application/json')
 
 
-    def get_registered_providers(self):
+    def get_providers(self):
+        """
+
+        :return:
+        """
+        return Response(status=200, response=json.dumps("Send all saved Providers"), mimetype='application/json')
+
+    def add_provider(self):
+        """
+
+        :return:
+        """
+        print(request.headers)
+        if ('Provider' and 'Username' and 'Password' and 'Minbalance') in request.headers.keys():
+            provider = request.headers['Provider']
+            username = request.headers['Username']
+            password = request.headers['Password']
+            min_balance = request.headers['Minbalance']
+
+            sql = "insert into {} ".format(self.database_table)
+            data = "s"
+            self.dbinserter.row(sql=sql, data=data)
+            return Response(status=200, response=json.dumps("Successfully inserted Provider"),
+                            mimetype='application/json')
+        else:
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+
+    def delete_provider(self):
         """
 
         :return:
         """
         pass
-
-    def add_new_provider(self):
-        """
-
-        :return:
-        """
-        pass
-

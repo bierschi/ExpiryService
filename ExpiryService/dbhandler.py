@@ -70,6 +70,4 @@ class DBHandler:
         self.dbcreator.build(obj=Table(self.database_table,   Column(name="provider", type="text"),
                                                               Column(name="username", type="text"),
                                                               Column(name="password", type="text"),
-                                                              Column(name="min_balance", type="real"),
-                                                              Column(name="url", type="text"),
-                                                              Column(name="repetition_number", type="integer")))
+                                                              Column(name="min_balance", type="real")))

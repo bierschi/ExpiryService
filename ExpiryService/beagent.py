@@ -55,7 +55,7 @@ class BEAgent(DBHandler):
         """
 
         while self.__running:
-            print("test")
+            #print("test")
             sleep(1)
 
 

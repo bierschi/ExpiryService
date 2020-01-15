@@ -34,7 +34,9 @@ class ExpiryService:
             self.router.add_endpoint('/', 'index', method="GET", handler=self.api.index)
 
         # api routes
-        self.router.add_endpoint('/' + self.version + '/test', 'test', method="GET", handler=self.api.test)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/providers/', endpoint_name='get_providers', method="GET", handler=self.api.get_providers)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/', endpoint_name='add_provider', method="POST", handler=self.api.add_provider)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/', endpoint_name='delete_provider', method="DELETE", handler=self.api.delete_provider)
 
     def run(self, host='0.0.0.0', port=None, debug=None):
         """ runs the ExpiryService application on given port
