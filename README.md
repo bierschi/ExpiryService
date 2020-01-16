@@ -31,7 +31,7 @@ sudo adduser &lt;user&gt; syslog
 to apply this change, log out and log in again and check with the terminal command `groups`
 
 ## Changelog
-All changes and versioning information can be found in the [CHANGELOG]()
+All changes and versioning information can be found in the [CHANGELOG](https://github.com/bierschi/ExpiryService/blob/master/CHANGELOG.rst)
 
 
 

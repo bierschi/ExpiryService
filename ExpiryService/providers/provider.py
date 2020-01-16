@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 
 class Provider(ABC):
-    """ Base class Provider to define methods for specific Network Providers
+    """ Base class Provider to define methods for specific Mobile Phone Providers
 
     """
     def __init__(self):
