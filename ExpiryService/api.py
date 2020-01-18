@@ -1,9 +1,10 @@
 import json
 import logging
 from flask import Response, request, send_from_directory
+from ExpiryService.validator import Validator
 from ExpiryService.dbhandler import DBHandler
-from ExpiryService import ROOT_DIR
 from ExpiryService.exceptions import DBIntegrityError
+from ExpiryService import ROOT_DIR
 
 
 class APIHandler(DBHandler):
@@ -19,6 +20,9 @@ class APIHandler(DBHandler):
 
         # init base class
         super().__init__()
+
+        # validator instance
+        self.validator = Validator()
 
     def index(self):
         """ renders the frontend page
@@ -45,16 +49,18 @@ class APIHandler(DBHandler):
         provider_list = list()
         try:
             data = self.dbfetcher.all(sql=sql)
-            for elem in data:
-                provider_dict = dict()
-                provider_dict['provider'] = elem[0]
-                provider_dict['username'] = elem[1]
-                provider_dict['password'] = elem[2]
-                provider_dict['min_balance'] = elem[3]
-                provider_list.append(provider_dict)
         except Exception as e:
             self.logger.error("Exception occured. {}".format(e))
             return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
+
+        for elem in data:
+            provider_dict = dict()
+            provider_dict['provider']    = elem[0]
+            provider_dict['username']    = elem[1]
+            provider_dict['password']    = elem[2]
+            provider_dict['min_balance'] = elem[3]
+            provider_dict['name']        = elem[4]
+            provider_list.append(provider_dict)
 
         self.logger.info("send providers to client: {}".format(provider_list))
         return Response(status=200, response=json.dumps(provider_list), mimetype='application/json')
@@ -66,17 +72,46 @@ class APIHandler(DBHandler):
         """
 
         self.logger.info("POST request to route /provider/")
-        if ('Provider' and 'Username' and 'Password' and 'Minbalance') in request.headers.keys():
-            provider = request.headers['Provider']
-            username = request.headers['Username']
-            password = request.headers['Password']
+        if ('Provider' and 'Username' and 'Password' and 'Minbalance' and 'Name') in request.headers.keys():
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+            password    = request.headers['Password']
             min_balance = request.headers['Minbalance']
+            name        = request.headers['Name']
 
-            sql = "insert into {} (provider, username, password, min_balance) values (%s, %s, %s, %s)".format(
-                self.database_table)
-            # TODO Validator for provider, username, min balance
+            if ',' in min_balance:
+                min_balance = min_balance.replace(',', '.')
+
+            # validate given attributes
+            if not self.validator.provider(provider=provider):
+                self.logger.error("Provider {} is not supported".format(provider))
+                return Response(status=400, response=json.dumps("Provider {} is not supported".format(provider)), mimetype='application/json')
+            elif not self.validator.username(provider=provider, username=username):
+                self.logger.error("Username {} for given Provider {} is not valid".format(username, provider))
+                return Response(status=400, response=json.dumps("Username {} for given Provider {} is not valid".format(username, provider)), mimetype='application/json')
+            elif not self.validator.balance(balance=min_balance):
+                self.logger.error("Minimum Balance must be positive")
+                return Response(status=400, response=json.dumps("Minimum Balance must be positive"), mimetype='application/json')
+
+            # check if provider combination already available
+            sql_provider_combo = "select * from {} where provider = %s and username = %s and password = %s".format(self.database_table)
+
             try:
-                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance))
+                providers = self.dbfetcher.all(sql=sql_provider_combo, data=(provider, username, password))
+            except Exception as e:
+                self.logger.error("Exception!: {}".format(e))
+                return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
+
+            if len(providers) > 0:
+                self.logger.error("Provider {}, Username {} was already added".format(provider, username))
+                return Response(status=409, response=json.dumps("Provider was already added"),
+                                mimetype='application/json')
+
+            sql = "insert into {} (provider, username, password, min_balance, name) values (%s, %s, %s, %s, %s)".format(
+                self.database_table)
+
+            try:
+                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance, name))
             except DBIntegrityError as e:
                 self.logger.error("IntegrityError occured!: {}".format(e))
                 return Response(status=409, response=json.dumps("Provider data already available"), mimetype='application/json')
@@ -84,7 +119,7 @@ class APIHandler(DBHandler):
                 self.logger.error("Exception: {}".format(e))
                 return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
 
-            self.logger.info("Added new Provider: {} with Username: ".format(provider, username))
+            self.logger.info("Added new Provider: {} with Username: {}".format(provider, username))
             return Response(status=200, response=json.dumps("Successfully added new Provider: {} with Username: {}".format(provider, username)),
                             mimetype='application/json')
         else:
@@ -101,12 +136,15 @@ class APIHandler(DBHandler):
             provider = request.args.get('provider')
             username = request.args.get('username')
 
-            # TODO Validator for provider and username
+            # validate given attributes
+            if not self.validator.provider(provider=provider):
+                return Response(status=400, response=json.dumps("Provider {} is not supported".format(provider)), mimetype='application/json')
+            elif not self.validator.username(provider=provider, username=username):
+                return Response(status=400, response=json.dumps("Username {} for given Provider {} is not valid".format(username, provider)), mimetype='application/json')
 
             sql = "select * from {} where provider = %s and username = %s".format(self.database_table)
             try:
                 providers = self.dbfetcher.all(sql=sql, data=(provider, username))
-                print(providers)
             except Exception as e:
                 self.logger.error("Exception: {}".format(e))
                 return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
@@ -129,3 +167,24 @@ class APIHandler(DBHandler):
         else:
             self.logger.error("Bad DELETE Request to /provider/")
             return Response(status=400, response=json.dumps("Bad Request Parameters"), mimetype='application/json')
+
+    def update_balance(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def get_notification(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def register_notification(self):
+        """
+
+        :return:
+        """
+        pass

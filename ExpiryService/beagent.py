@@ -6,12 +6,18 @@ from time import sleep
 
 class BEAgent(DBHandler):
 
-    def __init__(self, **dbparams):
+    def __init__(self, postgres=False, **params):
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('create class BEAgent')
 
+        # get params
+        self.dbparams = dict()
+        self.dbparams.update(params['database'])
+        self.mailparams = dict()
+        self.mailparams.update(params['mail'])
+
         # init base class
-        super().__init__(postgres=False, **dbparams)
+        super().__init__(postgres=postgres, **self.dbparams)
 
         # create run thread
         self.__thread = threading.Thread(target=self.__run, daemon=False)
@@ -48,6 +54,22 @@ class BEAgent(DBHandler):
         if self.__thread:
             self.__running = False
 
+    def __get_all_providers(self):
+        """
+
+        :return:
+        """
+
+        sql = "select * from {}".format(self.database_table)
+
+        try:
+            providers = self.dbfetcher.all(sql=sql)
+        except Exception as e:
+            self.logger.error("Exception! {}".format(e))
+            return []
+        
+        return providers
+
     def __run(self):
         """
 
@@ -57,5 +79,5 @@ class BEAgent(DBHandler):
         while self.__running:
             #print("test")
             sleep(1)
-
+            self.__get_all_providers()
 
