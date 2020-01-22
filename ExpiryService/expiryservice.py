@@ -33,7 +33,7 @@ class ExpiryService:
         if self.frontend:
             self.router.add_endpoint('/', 'index', method="GET", handler=self.api.index)
 
-        # api routes
+        ## api routes
         # providers
         self.router.add_endpoint(endpoint='/api/' + self.version + '/providers/', endpoint_name='get_providers',
                                  method="GET",    handler=self.api.get_providers)
@@ -49,6 +49,8 @@ class ExpiryService:
                                  method="GET",   handler=self.api.get_mail_notification)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='register_mail_notification',
                                  method="POST",   handler=self.api.register_mail_notification)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='delete_mail_notification',
+                                 method="DELETE",   handler=self.api.delete_mail_notification)
 
     def run(self, host='0.0.0.0', port=None, debug=None):
         """ runs the ExpiryService application on given port

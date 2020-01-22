@@ -224,4 +224,9 @@ class APIHandler(DBHandler):
             self.logger.error("Bad POST Request to route /notification/mail/")
             return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
 
+    def delete_mail_notification(self):
+        """
 
+        :return:
+        """
+        pass
