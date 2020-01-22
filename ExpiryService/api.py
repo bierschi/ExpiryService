@@ -132,6 +132,7 @@ class APIHandler(DBHandler):
         :return: Response object
         """
 
+        self.logger.info("DELETE request to route /provider/")
         if ('provider' and 'username') in request.args.keys():
             provider = request.args.get('provider')
             username = request.args.get('username')
@@ -173,18 +174,54 @@ class APIHandler(DBHandler):
 
         :return:
         """
+        self.logger.info("POST request to route /provider/")
         pass
 
-    def get_notification(self):
+    def get_mail_notification(self):
         """
 
         :return:
         """
-        pass
 
-    def register_notification(self):
+        self.logger.info("GET request to route /notification/mail/")
+
+        if ('Provider' and 'Username' and 'Password') in request.headers.keys():
+
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+            password    = request.headers['Password']
+
+            sql = "select notifyer from {} where provider = %s and username = %s".format(self.database_table)
+
+        else:
+            self.logger.error("Bad GET Request to route /notification/mail/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+    def register_mail_notification(self):
         """
 
         :return:
         """
-        pass
+        self.logger.info("POST request to route /notification/mail/")
+
+        if ('Provider' and 'Username' and 'Password') in request.headers.keys():
+
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+            password    = request.headers['Password']
+
+            if ('receiver') in request.args.keys():
+                receiver = request.args.getlist('receiver')
+
+
+
+                self.logger.info("Successfully ".format())
+                return Response(status=200, response=json.dumps("Successfully ".format(provider, username)), mimetype='application/json')
+            else:
+                return Response(status=400, response=json.dumps("Bad Request Params"), mimetype='application/json')
+
+        else:
+            self.logger.error("Bad POST Request to route /notification/mail/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+
