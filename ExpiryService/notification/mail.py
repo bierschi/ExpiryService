@@ -12,14 +12,13 @@ class Mail:
             mail.login(username='', password='')
             mail.send()
     """
-    def __init__(self, smtp_server, port, sender, receiver, debug=False):
+    def __init__(self, smtp_server, port, sender, debug=False):
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('create class Mail')
 
         self.smtp_server = smtp_server
         self.port = port
         self.sender = sender
-        self.receiver = receiver
 
         self.server = smtplib.SMTP(self.smtp_server, self.port)
         self.context = ssl.create_default_context()
@@ -30,7 +29,6 @@ class Mail:
 
         self.msg = EmailMessage()
         self.msg['From'] = self.sender
-        self.msg['To'] = self.receiver
 
     def __del__(self):
         """ destructor
@@ -59,9 +57,10 @@ class Mail:
         """
         self.msg.set_content(body)
 
-    def send(self):
+    def send(self, receiver):
         """ sends the email
 
         """
-        self.server.sendmail(self.sender, self.receiver, self.msg.as_string())
+        self.msg['To'] = receiver
+        self.server.sendmail(self.sender, receiver, self.msg.as_string())
 

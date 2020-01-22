@@ -1,6 +1,7 @@
 import logging
 import threading
 from ExpiryService.dbhandler import DBHandler
+from ExpiryService.notification import Mail
 from time import sleep
 
 
@@ -18,6 +19,19 @@ class BEAgent(DBHandler):
 
         # init base class
         super().__init__(postgres=postgres, **self.dbparams)
+
+        if ('smtp' and 'port' and 'sender' and 'password') in self.mailparams.keys():
+            if (self.mailparams['smtp'] and self.mailparams['port'] and self.mailparams['sender'] and self.mailparams['password']) is not None:
+                self.logger.info("Create mail server")
+                self.smtp = self.mailparams['smtp']
+                self.port = self.mailparams['port']
+                self.sender = self.mailparams['sender']
+                self.password = self.mailparams['password']
+                self.mail = Mail(smtp_server=self.smtp, port=self.port, sender=self.sender)
+            else:
+                self.logger.error("Mail params are none")
+        else:
+            self.logger.error("No mail params provided")
 
         # create run thread
         self.__thread = threading.Thread(target=self.__run, daemon=False)
@@ -67,7 +81,7 @@ class BEAgent(DBHandler):
         except Exception as e:
             self.logger.error("Exception! {}".format(e))
             return []
-        
+
         return providers
 
     def __run(self):
