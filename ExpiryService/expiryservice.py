@@ -34,18 +34,21 @@ class ExpiryService:
             self.router.add_endpoint('/', 'index', method="GET", handler=self.api.index)
 
         # api routes
+        # providers
         self.router.add_endpoint(endpoint='/api/' + self.version + '/providers/', endpoint_name='get_providers',
                                  method="GET",    handler=self.api.get_providers)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='add_provider',
                                  method="POST",   handler=self.api.add_provider)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='delete_provider',
                                  method="DELETE", handler=self.api.delete_provider)
+        # balance
         self.router.add_endpoint(endpoint='/api/' + self.version + '/balance/',  endpoint_name='update_balance',
                                  method="POST",   handler=self.api.update_balance)
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/',  endpoint_name='register_notification',
-                                 method="POST",   handler=self.api.register_notification)
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/',  endpoint_name='get_notifications',
-                                 method="GET",   handler=self.api.get_notification)
+        # notification
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='get_mail_notification',
+                                 method="GET",   handler=self.api.get_mail_notification)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='register_mail_notification',
+                                 method="POST",   handler=self.api.register_mail_notification)
 
     def run(self, host='0.0.0.0', port=None, debug=None):
         """ runs the ExpiryService application on given port
