@@ -60,6 +60,7 @@ class APIHandler(DBHandler):
             provider_dict['password']    = elem[2]
             provider_dict['min_balance'] = elem[3]
             provider_dict['name']        = elem[4]
+            provider_dict['notifyer']    = elem[5]
             provider_list.append(provider_dict)
 
         self.logger.info("send providers to client: {}".format(provider_list))
@@ -72,12 +73,13 @@ class APIHandler(DBHandler):
         """
 
         self.logger.info("POST request to route /provider/")
-        if ('Provider' and 'Username' and 'Password' and 'Minbalance' and 'Name') in request.headers.keys():
+        if ('Provider' and 'Username' and 'Password' and 'Minbalance' and 'Name' and 'Notifyer') in request.headers.keys():
             provider    = request.headers['Provider']
             username    = request.headers['Username']
             password    = request.headers['Password']
             min_balance = request.headers['Minbalance']
             name        = request.headers['Name']
+            notifyer    = request.headers['Notifyer']
 
             if ',' in min_balance:
                 min_balance = min_balance.replace(',', '.')
@@ -107,11 +109,11 @@ class APIHandler(DBHandler):
                 return Response(status=409, response=json.dumps("Provider was already added"),
                                 mimetype='application/json')
 
-            sql = "insert into {} (provider, username, password, min_balance, name) values (%s, %s, %s, %s, %s)".format(
+            sql = "insert into {} (provider, username, password, min_balance, name, notifyer) values (%s, %s, %s, %s, %s, %s)".format(
                 self.database_table)
 
             try:
-                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance, name))
+                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance, name, notifyer))
             except DBIntegrityError as e:
                 self.logger.error("IntegrityError occured!: {}".format(e))
                 return Response(status=409, response=json.dumps("Provider data already available"), mimetype='application/json')
@@ -169,7 +171,15 @@ class APIHandler(DBHandler):
             self.logger.error("Bad DELETE Request to /provider/")
             return Response(status=400, response=json.dumps("Bad Request Parameters"), mimetype='application/json')
 
-    def update_balance(self):
+
+    def get_creditbalance(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def update_creditbalance(self):
         """
 
         :return:
@@ -185,13 +195,26 @@ class APIHandler(DBHandler):
 
         self.logger.info("GET request to route /notification/mail/")
 
-        if ('Provider' and 'Username' and 'Password') in request.headers.keys():
+        if ('Provider' and 'Username') in request.headers.keys():
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
-            password    = request.headers['Password']
+            #password    = request.headers['Password']
 
-            sql = "select notifyer from {} where provider = %s and username = %s".format(self.database_table)
+            sql_notifyer = "select notifyer from {} where provider = %s and username = %s".format(self.database_table)
+
+            notifyers = self.dbfetcher.all(sql=sql_notifyer, data=(provider, username))
+
+            if len(notifyers) > 0:
+                notifyer_list = list()
+                for notifyer in notifyers:
+                    notifyer_list.append(notifyer[0])
+
+                self.logger.info("Send notifyer list to client: {}".format(notifyer_list))
+                return Response(status=200, response=json.dumps(notifyer_list), mimetype='application/json')
+
+            else:
+                return Response(status=404, response=json.dumps("No mail notification was set!"), mimetype='application/json')
 
         else:
             self.logger.error("Bad GET Request to route /notification/mail/")
@@ -204,16 +227,28 @@ class APIHandler(DBHandler):
         """
         self.logger.info("POST request to route /notification/mail/")
 
-        if ('Provider' and 'Username' and 'Password') in request.headers.keys():
+        if ('Provider' and 'Username') in request.headers.keys():
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
-            password    = request.headers['Password']
+            #password    = request.headers['Password']
 
             if ('receiver') in request.args.keys():
-                receiver = request.args.getlist('receiver')
+                receivers = request.args.getlist('receiver')
 
+                sql_notifyer = "select notifyer from {} where provider = %s and username = %s".format(self.database_table)
 
+                notifyers = self.dbfetcher.all(sql=sql_notifyer, data=(provider, username))
+                print(notifyers)
+
+                # check if receiver already in db
+                if len(notifyers) > 0:
+                    pass
+                else:
+                    sql_insert_receiver = "update {} set notifyer = %s where provider = %s and username = %s".format(self.database_table)
+
+                    data = "(abc@web.de, def@web.de)"
+                    self.dbinserter.row(sql=sql_insert_receiver, data=(data, provider, username))
 
                 self.logger.info("Successfully ".format())
                 return Response(status=200, response=json.dumps("Successfully ".format(provider, username)), mimetype='application/json')
@@ -229,4 +264,5 @@ class APIHandler(DBHandler):
 
         :return:
         """
+        self.logger.info("DELETE request to route /notification/mail/")
         pass

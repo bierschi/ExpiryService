@@ -42,8 +42,11 @@ class ExpiryService:
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='delete_provider',
                                  method="DELETE", handler=self.api.delete_provider)
         # balance
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/balance/',  endpoint_name='update_balance',
-                                 method="POST",   handler=self.api.update_balance)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/creditbalance/min/',  endpoint_name='get_creditbalance',
+                                 method="GET",   handler=self.api.get_creditbalance)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/creditbalance/min/',  endpoint_name='update_creditbalance',
+                                 method="POST",   handler=self.api.update_creditbalance)
+
         # notification
         self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='get_mail_notification',
                                  method="GET",   handler=self.api.get_mail_notification)
