@@ -35,8 +35,8 @@ class ExpiryService:
 
         ## api routes
         # providers
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/providers/', endpoint_name='get_providers',
-                                 method="GET",    handler=self.api.get_providers)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/', endpoint_name='get_provider',
+                                 method="GET",    handler=self.api.get_provider)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='add_provider',
                                  method="POST",   handler=self.api.add_provider)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='delete_provider',

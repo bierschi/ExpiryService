@@ -56,7 +56,15 @@ class Validator:
         else:
             return False
 
+    def notifyer(self, notifyer):
+        """ checks if notifyer includes the char '@'
 
-if __name__ == '__main__':
-    val = Validator()
-    print(val.username(provider="netzclub", username='0157124'))
+        :param notifyer: notifyer string
+        :return: return True or False
+        """
+
+        if '@' in notifyer:
+            return True
+        else:
+            return False
+
