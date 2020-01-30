@@ -35,6 +35,13 @@ class Netzclub(Provider):
 
         self.netzclub_data = dict()
 
+    def __str__(self):
+        """ string representation
+
+        :return: str
+        """
+        return "Netzclub"
+
     def __get_login_tokens(self):
         """ get the csrf token from the web page
 

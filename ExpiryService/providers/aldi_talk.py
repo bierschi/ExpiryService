@@ -23,6 +23,13 @@ class AldiTalk(Provider):
 
         self.aldi_data = dict()
 
+    def __str__(self):
+        """ string representation
+
+        :return: str
+        """
+        return "AldiTalk"
+
     def __get_csrf_token(self):
         """ get the csrf token from the web page
 

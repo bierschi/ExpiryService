@@ -2,6 +2,8 @@ import logging
 import threading
 from ExpiryService.dbhandler import DBHandler
 from ExpiryService.notification import Mail
+from ExpiryService.providers import Provider, AldiTalk, Netzclub
+from ExpiryService.exceptions import ProviderInstanceError, ProviderLoginError
 from time import sleep
 
 
@@ -27,7 +29,8 @@ class BEAgent(DBHandler):
                 self.port = self.mailparams['port']
                 self.sender = self.mailparams['sender']
                 self.password = self.mailparams['password']
-                self.mail = Mail(smtp_server=self.smtp, port=self.port, sender=self.sender)
+                self.mail = Mail(smtp_server=self.smtp, port=self.port)
+                self.mail.login(self.sender, self.password)
             else:
                 self.logger.error("Mail params are none")
         else:
@@ -68,10 +71,10 @@ class BEAgent(DBHandler):
         if self.__thread:
             self.__running = False
 
-    def __get_all_providers(self):
-        """
+    def __get_registered_providers(self):
+        """ get all registered providers in database table
 
-        :return:
+        :return: list of registered providers
         """
 
         sql = "select * from {}".format(self.database_table)
@@ -84,6 +87,48 @@ class BEAgent(DBHandler):
 
         return providers
 
+    def create_provider_instance(self, provider):
+        """ creates provider instance
+
+        :return: instance of type provider
+        """
+        if provider == 'netzclub':
+            return Netzclub()
+        elif provider == 'alditalk':
+            return AldiTalk()
+        else:
+            raise ProviderInstanceError("Could not create the provider instance")
+
+    def login_provider(self, provider, username, password):
+        """ login to the provider web page with username and password
+
+        :return: logged in provider instance
+        """
+
+        if isinstance(provider, Provider):
+            if provider.login(username=username, password=password):
+                return provider
+            else:
+                raise ProviderLoginError("Failed to login to provider {}".format(provider))
+        else:
+            raise ProviderInstanceError("Could not return logged in provider instance")
+
+    def get_consumption_data(self, provider):
+        """
+
+        :return:
+        """
+        return provider.current_consumption()
+
+    def send_notification_mail(self, receivers, consumption_data):
+        """
+
+        :param receivers:
+        :param consumption_data:
+        :return:
+        """
+        pass
+
     def __run(self):
         """
 
@@ -91,7 +136,19 @@ class BEAgent(DBHandler):
         """
 
         while self.__running:
-            #print("test")
-            sleep(1)
-            self.__get_all_providers()
 
+            registered_provider_list = self.__get_registered_providers()
+            if len(registered_provider_list) > 0:
+                for registered_provider in registered_provider_list:
+                    try:
+                        provider_instance = self.create_provider_instance(provider=registered_provider[0])
+                        logged_in_provider = self.login_provider(provider=provider_instance, username=registered_provider[1], password=registered_provider[2])
+                        print(self.get_consumption_data(provider=logged_in_provider))
+
+                    except ProviderInstanceError:
+                        pass
+                    except ProviderLoginError:
+                        pass
+            else:
+                self.logger.error("registered provider list is empty!")
+            sleep(100)

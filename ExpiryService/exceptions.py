@@ -20,3 +20,11 @@ class DBIntegrityError(Exception):
     pass
 
 
+class ProviderInstanceError(Exception):
+    """ProviderInstanceError"""
+    pass
+
+
+class ProviderLoginError(Exception):
+    """ProviderLoginError"""
+    pass

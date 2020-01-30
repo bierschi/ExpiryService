@@ -37,7 +37,7 @@ class ExpiryService:
         # providers
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/', endpoint_name='get_provider',
                                  method="GET",    handler=self.api.get_provider)
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='add_provider',
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='update_provider',
                                  method="POST",   handler=self.api.add_provider)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='delete_provider',
                                  method="DELETE", handler=self.api.delete_provider)
@@ -46,11 +46,12 @@ class ExpiryService:
                                  method="GET",   handler=self.api.get_creditbalance)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/creditbalance/min/',  endpoint_name='update_creditbalance',
                                  method="POST",   handler=self.api.update_creditbalance)
-
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/creditbalance/min/',  endpoint_name='delete_creditbalance',
+                                 method="DELETE",   handler=self.api.delete_creditbalance)
         # notification
         self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='get_mail_notification',
                                  method="GET",   handler=self.api.get_mail_notification)
-        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='register_mail_notification',
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='update_mail_notification',
                                  method="POST",   handler=self.api.register_mail_notification)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='delete_mail_notification',
                                  method="DELETE",   handler=self.api.delete_mail_notification)

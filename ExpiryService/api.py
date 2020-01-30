@@ -184,24 +184,100 @@ class APIHandler(DBHandler):
             return Response(status=200, response=json.dumps("Successfully deleted all providers from database"), mimetype='application/json')
 
     def get_creditbalance(self):
-        """
+        """ get the creditbalance from given Provider with Username
 
-        :return:
+        :return: Response Object
         """
-        pass
+        self.logger.info("GET request to route /creditbalance/min/")
+
+        if ('Provider' and 'Username') in request.headers.keys():
+
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+
+            sql_creditbalance = "select min_balance from {} where provider = %s and username = %s".format(self.database_table)
+
+            creditbalance = self.dbfetcher.all(sql=sql_creditbalance, data=(provider, username))
+            if len(creditbalance) > 0:
+                min_balance_list = list()
+                for balance in creditbalance:
+                    if balance[0] is not None:
+                        min_balance = balance[0]
+                        min_balance_list.append(min_balance)
+                    else:
+                        self.logger.error("Saved min_balance list is NULL!")
+
+                self.logger.info("Send notifyer list to client: {}".format(min_balance_list))
+                return Response(status=200, response=json.dumps(min_balance_list), mimetype='application/json')
+            else:
+                return Response(status=404, response=json.dumps("No credit balance was set!"),
+                                mimetype='application/json')
+
+        else:
+            self.logger.error("Bad GET Request to route /creditbalance/min/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
 
     def update_creditbalance(self):
-        """
+        """ updates the creditbalance from given Provider with Username
 
-        :return:
+        :return: Response Object
         """
-        self.logger.info("POST request to route /provider/")
-        pass
+        self.logger.info("POST request to route /creditbalance/min/")
+
+        if ('Provider' and 'Username') in request.headers.keys():
+
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+
+            if 'amount' in request.args.keys():
+                given_amount = request.args.getlist('amount')
+
+                if len(given_amount) > 0:
+                    new_amount = given_amount[0]
+
+                    sql_update_balance = "update {} set min_balance = %s where provider = %s and username = %s".format(self.database_table)
+
+                    try:
+                        self.dbinserter.row(sql=sql_update_balance, data=(new_amount, provider, username))
+                    except Exception as e:
+                        self.logger.error("Exception: {}".format(e))
+                        return Response(status=500, response=json.dumps("Internal Database Error"),
+                                        mimetype='application/json')
+
+                    self.logger.info("Successfully updated the min_balance to {} from Provider: {} and Username: {}".format(new_amount, provider, username))
+                    return Response(status=200, response=json.dumps("Successfully updated the min_balance to {} from Provider: {} "
+                                                                    "and Username: {}".format(new_amount, provider, username)),
+                                    mimetype='application/json')
+                else:
+                    self.logger.error("Could not update the creditbalance. Amount list is zero")
+                    return Response(status=500, response=json.dumps("Could not update the creditbalance. Amount argument is zero!"), mimetype='application/json')
+            else:
+                return Response(status=400, response=json.dumps("Bad Request Params"), mimetype='application/json')
+
+        else:
+            self.logger.error("Bad GET Request to route /creditbalance/min/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+    def delete_creditbalance(self):
+        """ deletes the creditbalance from given Provider with Username
+
+        :return: Response Object
+        """
+        self.logger.info("DELETE request to route /creditbalance/min/")
+
+        if ('Provider' and 'Username') in request.headers.keys():
+
+            provider    = request.headers['Provider']
+            username    = request.headers['Username']
+
+        else:
+            self.logger.error("Bad GET Request to route /creditbalance/min/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
 
     def get_mail_notification(self):
-        """
+        """ get configured mail notificiations
 
-        :return:
+        :return: Response object
         """
 
         self.logger.info("GET request to route /notification/mail/")
@@ -233,9 +309,9 @@ class APIHandler(DBHandler):
             return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
 
     def register_mail_notification(self):
-        """
+        """ register a new mail notification
 
-        :return:
+        :return: Response Object
         """
         self.logger.info("POST request to route /notification/mail/")
 
@@ -286,8 +362,8 @@ class APIHandler(DBHandler):
                     return Response(status=200, response=json.dumps("Successfully updated the notifyers from Provider: {} and Username: {}".format(provider, username)),
                                     mimetype='application/json')
                 else:
-
-                    return Response(status=500, response=json.dumps("Internal Error".format(provider, username)), mimetype='application/json')
+                    self.logger.error("Saved notifyers list is zero!")
+                    return Response(status=500, response=json.dumps("Internal Error"), mimetype='application/json')
             else:
                 return Response(status=400, response=json.dumps("Bad Request Params"), mimetype='application/json')
 
