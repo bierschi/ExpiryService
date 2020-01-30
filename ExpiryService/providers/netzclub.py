@@ -23,7 +23,6 @@ class Netzclub(Provider):
         self.csrf_token, self.sid, self.reload_token = self.__get_login_tokens()
 
         self.session.headers.update({
-            #"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
             "Accept-Encoding": "gzip, deflate, br",
@@ -64,7 +63,6 @@ class Netzclub(Provider):
         :param password: password
         :return: True if login was successful else False
         """
-        self.logger.info("Login to Netzclub web page")
 
         login_form = {
             '__hidden_loginForm': 'exists',
@@ -87,30 +85,75 @@ class Netzclub(Provider):
             return False
 
     def current_consumption(self):
-        """
+        """ get current consumption from Netzclub web page
 
-        :return:
+        :return: consumption dict
         """
         netzclub_home = self.session.get(url="https://www.netzclub.net/selfcare/")
 
         soup = BeautifulSoup(netzclub_home.text, 'html.parser')
 
+        credit_balance = soup.find("span", {"class": "c-button__balance"}).text
+
+        name = soup.find("div", {"class": "c-user-info c-user-info--with-border"}).text
+        name_number_list = name.strip().replace('\n', '').split('           ')
+        if len(name_number_list) > 2:
+            name   = name_number_list[0]
+            number = name_number_list[2].strip()
+        else:
+            name = ''
+            number = ''
+
         remaining_data = soup.find("div", {"class": "c-value-box__amount"}).text
-        print(remaining_data)
+
         total_data = soup.find("div", {"class": "c-value-box__text"}).text
-        print(total_data)
+
         end_date = soup.find("small", {"class": "c-value-box__footnote"}).text
         end_date = end_date.strip().replace('\n', '')
-        print(end_date)
+
         self.netzclub_data.update({
+            'name': name,
+            'number': number,
+            'creditbalance': credit_balance,
             'remaining_volume': remaining_data,
             'total_volume': total_data,
             'end_date': end_date
         })
         return self.netzclub_data
 
+    def data_usage_overview(self):
+        """ parses the data usage overview from the netzclub webpage
+
+        :return: table dict
+        """
+        netzclub_home = self.session.get(url="https://www.netzclub.net/meine-abrechnung/")
+
+        soup = BeautifulSoup(netzclub_home.text, 'html.parser')
+
+        data_usage = soup.find("div", {"id": "datenverbrauchsuebersicht"})
+
+        table_head = data_usage.find('thead')
+        table_head_rows = table_head.find_all('th')
+
+        table_dict = dict()
+        table_head_list = list()
+        for row in table_head_rows:
+            table_head_list.append(row.text)
+
+        table_dict['table_head'] = table_head_list
+
+        table_body = data_usage.find('tbody')
+        table_body_rows = table_body.find_all('tr')
+
+        table_body_list = list()
+        for row in table_body_rows:
+            table_body_list.append(row.text.strip().split('\n'))
+
+        table_dict['table_body'] = table_body_list
+
+        return table_dict
 
 if __name__ == '__main__':
     netzclub = Netzclub()
     if netzclub.login(username="", password=""):
-        netzclub.current_consumption()
+        print(netzclub.data_usage_overview())

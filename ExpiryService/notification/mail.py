@@ -2,6 +2,7 @@ import ssl
 import logging
 import smtplib
 from email.message import EmailMessage
+from ExpiryService.exceptions import MailMessageError
 
 
 class Mail:
@@ -26,7 +27,7 @@ class Mail:
         if debug:
             self.server.set_debuglevel(True)
 
-        self.msg = EmailMessage()
+        self.msg = None
 
     def __del__(self):
         """ destructor
@@ -40,27 +41,45 @@ class Mail:
 
         """
         self.sender = username
-        self.msg['From'] = self.sender
         self.server.login(user=self.sender, password=password)
+
+    def new_message(self):
+        """ creates a new EmailMessage object
+
+        """
+        self.msg = EmailMessage()
+        if self.sender is not None:
+            self.msg['From'] = self.sender
+        else:
+            pass
 
     def set_subject(self, subject):
         """ sets the subject for the email
 
         :param subject: subject in email
         """
-        self.msg['Subject'] = subject
+        if self.msg is not None:
+            self.msg['Subject'] = subject
+        else:
+            raise MailMessageError("No Mail Message was set!")
 
     def set_body(self, body):
         """ sets the body for the email
 
         :param body: body content in email
         """
-        self.msg.set_content(body)
+        if self.msg is not None:
+            self.msg.set_content(body)
+        else:
+            raise MailMessageError("No Mail Message was set!")
 
     def send(self, receiver):
-        """ sends the email
+        """ sends the email to the receiver
 
         """
-        self.msg['To'] = receiver
-        self.server.sendmail(self.sender, receiver, self.msg.as_string())
-
+        if self.msg is not None:
+            self.msg['To'] = receiver
+            self.server.sendmail(self.sender, receiver, self.msg.as_string())
+            self.msg.clear()
+        else:
+            raise MailMessageError("No Mail Message was set!")

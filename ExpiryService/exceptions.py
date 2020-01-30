@@ -28,3 +28,8 @@ class ProviderInstanceError(Exception):
 class ProviderLoginError(Exception):
     """ProviderLoginError"""
     pass
+
+
+class MailMessageError(Exception):
+    """MailMessageError"""
+    pass

@@ -8,7 +8,13 @@ from time import sleep
 
 
 class BEAgent(DBHandler):
+    """ class BEAgent to provide the logical part from the expryservice app
 
+    USAGE:
+            beagent = BEAgent(postgres=False, **params)
+            beagent.start()
+
+    """
     def __init__(self, postgres=False, **params):
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('create class BEAgent')
@@ -32,7 +38,7 @@ class BEAgent(DBHandler):
                 self.mail = Mail(smtp_server=self.smtp, port=self.port)
                 self.mail.login(self.sender, self.password)
             else:
-                self.logger.error("Mail params are none")
+                self.logger.error("Mail params are None")
         else:
             self.logger.error("No mail params provided")
 
@@ -87,7 +93,7 @@ class BEAgent(DBHandler):
 
         return providers
 
-    def create_provider_instance(self, provider):
+    def __create_provider_instance(self, provider):
         """ creates provider instance
 
         :return: instance of type provider
@@ -99,7 +105,7 @@ class BEAgent(DBHandler):
         else:
             raise ProviderInstanceError("Could not create the provider instance")
 
-    def login_provider(self, provider, username, password):
+    def __login_provider(self, provider, username, password):
         """ login to the provider web page with username and password
 
         :return: logged in provider instance
@@ -114,11 +120,25 @@ class BEAgent(DBHandler):
             raise ProviderInstanceError("Could not return logged in provider instance")
 
     def get_consumption_data(self, provider):
+        """ get the consumption data dict from given provider
+
+        :return: consumption data dict
+        """
+        return provider.current_consumption()
+
+    def get_data_usage_overview(self, provider):
+        """ get the data usage overview from given provider
+
+        :return: list of data usage
+        """
+        return provider.data_usage_overview()
+
+    def prepare_notification_mail(self):
         """
 
         :return:
         """
-        return provider.current_consumption()
+        pass
 
     def send_notification_mail(self, receivers, consumption_data):
         """
@@ -127,6 +147,10 @@ class BEAgent(DBHandler):
         :param consumption_data:
         :return:
         """
+        self.mail.new_message()
+        self.mail.set_subject("CONSUMPTION")
+        self.mail.set_body(str(consumption_data))
+        self.mail.send(receiver=receivers)
         pass
 
     def __run(self):
@@ -141,14 +165,14 @@ class BEAgent(DBHandler):
             if len(registered_provider_list) > 0:
                 for registered_provider in registered_provider_list:
                     try:
-                        provider_instance = self.create_provider_instance(provider=registered_provider[0])
-                        logged_in_provider = self.login_provider(provider=provider_instance, username=registered_provider[1], password=registered_provider[2])
-                        print(self.get_consumption_data(provider=logged_in_provider))
-
+                        provider_instance = self.__create_provider_instance(provider=registered_provider[0])
+                        logged_in_provider = self.__login_provider(provider=provider_instance, username=registered_provider[1], password=registered_provider[2])
+                        consumption = self.get_consumption_data(provider=logged_in_provider)
+                        #self.send_notification_mail("bierschi1@web.de", consumption)
                     except ProviderInstanceError:
                         pass
                     except ProviderLoginError:
                         pass
             else:
-                self.logger.error("registered provider list is empty!")
+                self.logger.error("registered provider list from database is empty!")
             sleep(100)

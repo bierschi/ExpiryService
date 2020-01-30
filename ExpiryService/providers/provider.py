@@ -28,6 +28,15 @@ class Provider(ABC):
     def current_consumption(self):
         """ get current consumption from provider web page
 
-        :return: consumption data
+        :return: consumption data dict
         """
         pass
+
+    @abstractmethod
+    def data_usage_overview(self):
+        """ get data usage overview from provider web page
+
+        :return: data usage dict
+        """
+        pass
+

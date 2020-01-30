@@ -51,7 +51,7 @@ class AldiTalk(Provider):
 
         :return: True if login was successful else False
         """
-        self.logger.info("Login to AldiTalk web page")
+
         login_form = {
             '_csrf_token': self.csrf_token,
             'form[username]': username,
@@ -69,11 +69,11 @@ class AldiTalk(Provider):
     def current_consumption(self):
         """ get current consumption from AldiTalk web page
 
-        :return:
+        :return: consumption dict
         """
         resp = self.session.get(url=self.aldi_url)
         soup = BeautifulSoup(resp.text, 'html.parser')
-
+        #print(soup)
         credit_balance_box = soup.find("div", {"id": "ajaxReplaceQuickInfoBoxBalanceId"})
 
         credit_balance = ''
@@ -84,7 +84,14 @@ class AldiTalk(Provider):
 
         remaining_data, total_data, end_date = self.__parse_table_data(table=table_data)
 
+        name_number_data = soup.find("div", {"id": "ajaxReplaceAreaId-32956"})
+
+        name = name_number_data.find('p').text
+        number = name_number_data.find('h3').text
+
         self.aldi_data.update({
+            'name': name,
+            'number': number,
             'credit_balance': credit_balance,
             'remaining_volume': remaining_data,
             'total_volume': total_data,
@@ -118,10 +125,43 @@ class AldiTalk(Provider):
         else:
             self.logger.error("length of table data is less than 5! Can not parse remaining data")
 
+    def data_usage_overview(self):
+        """ parses the data usage overview from the alditalk webpage
+
+        :return: table dict
+        """
+        resp = self.session.get(url=self.aldi_url + 'konto/kontoubersicht')
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        data_usage = soup.find("div", {"id": "ajaxReplaceAreaId-20701"})
+
+        table_head = data_usage.find('thead')
+        table_head_rows = table_head.find_all('th')
+
+        table_dict = dict()
+        table_head_list = list()
+        for row in table_head_rows:
+            table_head_list.append(row.text)
+
+        table_dict['table_head'] = table_head_list
+
+        table_body = data_usage.find('tbody')
+        table_body_rows = table_body.find_all('tr')
+
+        table_body_list = list()
+        for row in table_body_rows:
+            data = row.text.strip().replace('  ', '').splitlines()
+            data = [s for s in data if s]  # remove empty str
+            table_body_list.append(data)
+
+        table_dict['table_body'] = table_body_list
+
+        return table_dict
+
 
 if __name__ == '__main__':
     aldi = AldiTalk()
-    aldi.login(username='01575-5021329', password='')
-    print(aldi.current_consumption())
+    if aldi.login(username='01575-5021329', password=''):
+        print(aldi.data_usage_overview())
 
 

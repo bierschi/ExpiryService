@@ -92,7 +92,7 @@ def main():
     # arguments for telegram notification
     # TODO
 
-    parser.add_argument('-v', '--version', action='version', version=__version__, help='show the current version')
+    parser.add_argument('-v', '--version', action='version', version=__version__, help='shows the current version')
     args = parser.parse_args()
 
     params = dict()
@@ -131,12 +131,12 @@ def main():
         print("No mail server params available")
         params.setdefault('mail', {'smtp': args.Msmtp, 'port': args.Mport, 'sender': args.Msender, 'password': args.Mpassword})
     else:
-        nsmtp     = args.Nsmtp
-        nport     = args.Nport
-        nsender   = args.Nsender
-        npassword = args.Npassword
+        msmtp     = args.Msmtp
+        mport     = args.Mport
+        msender   = args.Msender
+        mpassword = args.Mpassword
 
-        params.setdefault('mail', {'smtp': nsmtp, 'port': nport, 'sender': nsender, 'password': npassword})
+        params.setdefault('mail', {'smtp': msmtp, 'port': mport, 'sender': msender, 'password': mpassword})
 
     # set up logger instance
     logger = Logger(name='ExpiryService', level='info', log_folder=log_folder)
