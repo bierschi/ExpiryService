@@ -41,6 +41,8 @@ class ExpiryService:
                                  method="POST",   handler=self.api.add_provider)
         self.router.add_endpoint(endpoint='/api/' + self.version + '/provider/',  endpoint_name='delete_provider',
                                  method="DELETE", handler=self.api.delete_provider)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/providers/',  endpoint_name='delete_providers',
+                                 method="DELETE", handler=self.api.delete_providers)
         # balance
         self.router.add_endpoint(endpoint='/api/' + self.version + '/creditbalance/min/',  endpoint_name='get_creditbalance',
                                  method="GET",   handler=self.api.get_creditbalance)
@@ -63,7 +65,7 @@ class ExpiryService:
         :param port: port for the webserver
         :param debug: debug mode true or false
         """
-        self.beagent.start()
+        #self.beagent.start()
         self.router.run(host=host, port=port, debug=debug)
 
 

@@ -71,5 +71,5 @@ class DBHandler:
                                                               Column(name="username", type="text"),
                                                               Column(name="password", type="text"),
                                                               Column(name="min_balance", type="real"),
-                                                              Column(name="name", type="text"),
+                                                              Column(name="usage", type="text"),
                                                               Column(name="notifyer", type="text")))

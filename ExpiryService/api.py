@@ -55,11 +55,11 @@ class APIHandler(DBHandler):
 
         for elem in data:
             provider_dict = dict()
-            provider_dict['provider']    = elem[0]
-            provider_dict['username']    = elem[1]
-            provider_dict['password']    = elem[2]
-            provider_dict['min_balance'] = elem[3]
-            provider_dict['name']        = elem[4]
+            provider_dict['provider']     = elem[0]
+            provider_dict['username']     = elem[1]
+            provider_dict['password']     = elem[2]
+            provider_dict['min_balance']  = elem[3]
+            provider_dict['usage']        = elem[4]
             if elem[5] is not None:
                 provider_dict['notifyer']    = elem[5].split(';')
             else:
@@ -76,12 +76,13 @@ class APIHandler(DBHandler):
         """
 
         self.logger.info("POST request to route /provider/")
-        if ('Provider' and 'Username' and 'Password' and 'Minbalance' and 'Name' and 'Notifyer') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username', 'Password', 'Minbalance', 'Usage', 'Notifyer')):
+
             provider    = request.headers['Provider']
             username    = request.headers['Username']
             password    = request.headers['Password']
             min_balance = request.headers['Minbalance']
-            name        = request.headers['Name']
+            usage       = request.headers['Usage']
             notifyer    = request.headers['Notifyer']
 
             if ',' in min_balance:
@@ -115,11 +116,11 @@ class APIHandler(DBHandler):
                 return Response(status=409, response=json.dumps("Provider was already added"),
                                 mimetype='application/json')
 
-            sql = "insert into {} (provider, username, password, min_balance, name, notifyer) values (%s, %s, %s, %s, %s, %s)".format(
+            sql = "insert into {} (provider, username, password, min_balance, usage, notifyer) values (%s, %s, %s, %s, %s, %s)".format(
                 self.database_table)
 
             try:
-                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance, name, notifyer))
+                self.dbinserter.row(sql=sql, data=(provider, username, password, min_balance, usage, notifyer))
             except DBIntegrityError as e:
                 self.logger.error("IntegrityError occured!: {}".format(e))
                 return Response(status=409, response=json.dumps("Provider data already available"), mimetype='application/json')
@@ -141,7 +142,7 @@ class APIHandler(DBHandler):
         """
 
         self.logger.info("DELETE request to route /provider/")
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
             provider    = request.headers['Provider']
             username    = request.headers['Username']
 
@@ -174,14 +175,26 @@ class APIHandler(DBHandler):
                 return Response(status=404, response=json.dumps("Requested Provider and Username combination not found"),
                                 mimetype='application/json')
         else:
-            sql_delete_all = "delete from {}".format(self.database_table)
-            try:
-                self.dbinserter.sql(sql=sql_delete_all)
-            except Exception as e:
-                self.logger.error("Exception: {}".format(e))
-                return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
-            self.logger.error("Successfully deleted all providers from database")
-            return Response(status=200, response=json.dumps("Successfully deleted all providers from database"), mimetype='application/json')
+
+            self.logger.error("Bad DELETE Request to /provider/")
+            return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+    def delete_providers(self):
+        """ deletes all provider from the database
+
+        :return: Response object
+        """
+
+        self.logger.info("DELETE request to route /providers/")
+
+        sql_delete_all = "delete from {}".format(self.database_table)
+        try:
+            self.dbinserter.sql(sql=sql_delete_all)
+        except Exception as e:
+            self.logger.error("Exception: {}".format(e))
+            return Response(status=500, response=json.dumps("Internal Database Error"), mimetype='application/json')
+        self.logger.error("Successfully deleted all providers from database")
+        return Response(status=200, response=json.dumps("Successfully deleted all providers from database"), mimetype='application/json')
 
     def get_creditbalance(self):
         """ get the creditbalance from given Provider with Username
@@ -190,7 +203,7 @@ class APIHandler(DBHandler):
         """
         self.logger.info("GET request to route /creditbalance/min/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
@@ -207,7 +220,7 @@ class APIHandler(DBHandler):
                     else:
                         self.logger.error("Saved min_balance list is NULL!")
 
-                self.logger.info("Send notifyer list to client: {}".format(min_balance_list))
+                self.logger.info("Send min balance list to client: {}".format(min_balance_list))
                 return Response(status=200, response=json.dumps(min_balance_list), mimetype='application/json')
             else:
                 return Response(status=404, response=json.dumps("No credit balance was set!"),
@@ -224,7 +237,7 @@ class APIHandler(DBHandler):
         """
         self.logger.info("POST request to route /creditbalance/min/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
@@ -265,10 +278,23 @@ class APIHandler(DBHandler):
         """
         self.logger.info("DELETE request to route /creditbalance/min/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
+
+            sql_delete_balance = "update {} set min_balance = NULL where provider = %s and username = %s".format(
+                self.database_table)
+
+            try:
+                self.dbinserter.row(sql=sql_delete_balance, data=(provider, username))
+            except Exception as e:
+                self.logger.error("Exception: {}".format(e))
+                return Response(status=500, response=json.dumps("Internal Database Error"),
+                                mimetype='application/json')
+            self.logger.info("Successfully deleted the min_balance from Provider: {} and Username: {}".format(provider, username))
+            return Response(status=200, response=json.dumps("Successfully deleted the min_balance from Provider: {} "
+                                                "and Username: {}".format(provider, username)))
 
         else:
             self.logger.error("Bad GET Request to route /creditbalance/min/")
@@ -282,7 +308,7 @@ class APIHandler(DBHandler):
 
         self.logger.info("GET request to route /notification/mail/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
@@ -315,7 +341,7 @@ class APIHandler(DBHandler):
         """
         self.logger.info("POST request to route /notification/mail/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
 
             provider    = request.headers['Provider']
             username    = request.headers['Username']
@@ -378,7 +404,7 @@ class APIHandler(DBHandler):
         """
         self.logger.info("DELETE request to route /notification/mail/")
 
-        if ('Provider' and 'Username') in request.headers.keys():
+        if all(key in request.headers.keys() for key in ('Provider', 'Username')):
             provider = request.headers['Provider']
             username = request.headers['Username']
 

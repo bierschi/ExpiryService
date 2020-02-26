@@ -168,6 +168,7 @@ class BEAgent(DBHandler):
                         provider_instance = self.__create_provider_instance(provider=registered_provider[0])
                         logged_in_provider = self.__login_provider(provider=provider_instance, username=registered_provider[1], password=registered_provider[2])
                         consumption = self.get_consumption_data(provider=logged_in_provider)
+                        print(consumption)
                         #self.send_notification_mail("bierschi1@web.de", consumption)
                     except ProviderInstanceError:
                         pass
