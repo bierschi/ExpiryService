@@ -92,7 +92,7 @@ class AldiTalk(Provider):
         self.aldi_data.update({
             'name': name,
             'number': number,
-            'credit_balance': credit_balance,
+            'creditbalance': credit_balance,
             'remaining_volume': remaining_data,
             'total_volume': total_data,
             'end_date': end_date

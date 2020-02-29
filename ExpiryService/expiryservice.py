@@ -65,7 +65,7 @@ class ExpiryService:
         :param port: port for the webserver
         :param debug: debug mode true or false
         """
-        #self.beagent.start()
+        self.beagent.start()
         self.router.run(host=host, port=port, debug=debug)
 
 

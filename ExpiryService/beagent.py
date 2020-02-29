@@ -4,6 +4,7 @@ from ExpiryService.dbhandler import DBHandler
 from ExpiryService.notification import Mail
 from ExpiryService.providers import Provider, AldiTalk, Netzclub
 from ExpiryService.exceptions import ProviderInstanceError, ProviderLoginError
+from ExpiryService.scheduler import Scheduler
 from time import sleep
 
 
@@ -25,6 +26,8 @@ class BEAgent(DBHandler):
         self.mailparams = dict()
         self.mailparams.update(params['mail'])
 
+        self.__running = False
+
         # init base class
         super().__init__(postgres=postgres, **self.dbparams)
 
@@ -42,12 +45,20 @@ class BEAgent(DBHandler):
         else:
             self.logger.error("No mail params provided")
 
-        # create run thread
+        # create beagent run thread
         self.__thread = threading.Thread(target=self.__run, daemon=False)
-        self.__running = False
 
         # check if local database tables exists
         self._create_local_db_tables()
+
+        # create scheduler thread
+        self.scheduler = Scheduler()
+        self.scheduler.periodic(3600, self.check_data_from_providers, args=(True, ))
+
+        self.__schedule_thread = threading.Thread(target=self.scheduler.run, args=(True, ))
+        self.__schedule_thread.start()
+
+        self.provider_check_interval = 600
 
     def __del__(self):
         """ destructor
@@ -133,47 +144,82 @@ class BEAgent(DBHandler):
         """
         return provider.data_usage_overview()
 
-    def prepare_notification_mail(self):
+    def check_creditbalance_limit(self):
         """
 
         :return:
         """
         pass
 
-    def send_notification_mail(self, receivers, consumption_data):
-        """
+    def prepare_notification_mail(self, consumption, data_usage):
+        """ prepares the notification mail with consumption and data usage data
 
-        :param receivers:
-        :param consumption_data:
-        :return:
+        :return: notification string
         """
-        self.mail.new_message()
-        self.mail.set_subject("CONSUMPTION")
-        self.mail.set_body(str(consumption_data))
-        self.mail.send(receiver=receivers)
-        pass
+        self.logger.info("prepare notification mail")
+
+        consumption_str = "Name: {} \nNumber: {}\ncreditbalance: {}\nData Volume: {} {}\nEnd Date: {}".format(
+            consumption['name'], consumption['number'], consumption['creditbalance'], consumption['remaining_volume'],
+            consumption['total_volume'], consumption['end_date'])
+        data_usage_str = "\n\n"
+        for data_usage_month in data_usage['table_body']:
+            data_usage_month_str = "{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n\n".format(
+                data_usage['table_head'][0], data_usage_month[0],
+                data_usage['table_head'][1], data_usage_month[1],
+                data_usage['table_head'][2], data_usage_month[2],
+                data_usage['table_head'][3], data_usage_month[3],
+                data_usage['table_head'][4], data_usage_month[4])
+            data_usage_str += data_usage_month_str
+
+        return consumption_str + data_usage_str
+
+    def send_notification_mail(self, receivers, notification_str):
+        """ sends the notification mail to given receivers
+
+        :param receivers: receiver string from database
+        :param notification_str: notification str for email
+        """
+        receiver_list = receivers.split(';')
+        for receiver in receiver_list:
+            self.logger.info("Send Mail to {}".format(receiver))
+            self.mail.new_message()
+            self.mail.set_subject("Consumption Overview")
+            self.mail.set_body(str(notification_str))
+            self.mail.send(receiver=receiver)
+
+    def check_data_from_providers(self, notify=False):
+        """ checks data from registered database providers
+
+        """
+        registered_provider_list = self.__get_registered_providers()
+        if len(registered_provider_list) > 0:
+            for registered_provider in registered_provider_list:
+                try:
+                    provider_instance = self.__create_provider_instance(provider=registered_provider[0])
+                    logged_in_provider = self.__login_provider(provider=provider_instance,
+                                                               username=registered_provider[1],
+                                                               password=registered_provider[2])
+                    consumption = self.get_consumption_data(provider=logged_in_provider)
+                    data_usage = self.get_data_usage_overview(provider=logged_in_provider)
+
+                    if notify:
+                        notification_str = self.prepare_notification_mail(consumption=consumption, data_usage=data_usage)
+                        self.send_notification_mail(registered_provider[5], notification_str)
+
+                except ProviderInstanceError as ex:
+                    self.logger.error("ProviderInstanceError: {}".format(ex))
+                except ProviderLoginError as ex:
+                    self.logger.error("ProviderLoginError: {}".format(ex))
+        else:
+            self.logger.error("registered provider list from database is empty!")
 
     def __run(self):
-        """
+        """ beagent run thread
 
-        :return:
         """
 
         while self.__running:
 
-            registered_provider_list = self.__get_registered_providers()
-            if len(registered_provider_list) > 0:
-                for registered_provider in registered_provider_list:
-                    try:
-                        provider_instance = self.__create_provider_instance(provider=registered_provider[0])
-                        logged_in_provider = self.__login_provider(provider=provider_instance, username=registered_provider[1], password=registered_provider[2])
-                        consumption = self.get_consumption_data(provider=logged_in_provider)
-                        print(consumption)
-                        #self.send_notification_mail("bierschi1@web.de", consumption)
-                    except ProviderInstanceError:
-                        pass
-                    except ProviderLoginError:
-                        pass
-            else:
-                self.logger.error("registered provider list from database is empty!")
-            sleep(100)
+            sleep(self.provider_check_interval)
+            self.check_data_from_providers(notify=False)
+

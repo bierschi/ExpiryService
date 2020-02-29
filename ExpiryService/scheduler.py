@@ -58,8 +58,18 @@ class Scheduler:
         """
         self.scheduler.run(blocking=blocking)
 
+    def periodic(self, interval, action, args=()):
+        """ creates a periodic task
+
+        :param interval: periodic interval
+        :param action: action handler
+        :param args: args for the action handler
+        """
+        self.scheduler.enter(interval, 1, self.periodic, (interval, action, args))
+        action(*args)
+
 
 if __name__ == '__main__':
     scheduler = Scheduler()
-    scheduler.register_events(time.time(), 'test', 1, 'b', 'c')
-    #scheduler.run()
+    scheduler.periodic(10, scheduler.test, (5, ))
+    scheduler.run(blocking=True)

@@ -2,6 +2,7 @@ import ssl
 import logging
 import smtplib
 from email.message import EmailMessage
+from smtplib import SMTPRecipientsRefused
 from ExpiryService.exceptions import MailMessageError
 
 
@@ -79,7 +80,10 @@ class Mail:
         """
         if self.msg is not None:
             self.msg['To'] = receiver
-            self.server.sendmail(self.sender, receiver, self.msg.as_string())
+            try:
+                self.server.sendmail(self.sender, receiver, self.msg.as_string())
+            except SMTPRecipientsRefused as ex:
+                self.logger.error("Failed to send the mail: {}".format(ex))
             self.msg.clear()
         else:
             raise MailMessageError("No Mail Message was set!")
