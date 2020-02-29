@@ -42,7 +42,7 @@ pipeline {
                               artifacts: 'dist/*whl', fingerprint: true)
                         }
                         success {
-                            echo 'Install package ExpiryService'
+                            echo 'Install package ExpiryService on test server'
                             sh 'sudo python3 setup.py install'
                         }
                     }
@@ -50,10 +50,16 @@ pipeline {
                  stage('Deploy/Install To Target Server') {
                     steps {
                         echo 'Deploy ExpiryService to target server'
-
+                        sshPublisher(publishers: [sshPublisherDesc(configName: 'christian@server', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: 'sudo pip3 install projects/ExpiryService/$BUILD_NUMBER/ExpiryService-*.whl', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: 'ExpiryService/$BUILD_NUMBER', remoteDirectorySDF: false, removePrefix: 'dist', sourceFiles: 'dist/*.whl')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
                     }
                 }
+                 stage('Deploy To PyPI') {
+                    when { branch "release/*" }
 
+                    steps {
+                        echo 'Deploy ExpiryService to Python Package Index'
+                    }
+                }
 
     }
 }
