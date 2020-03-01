@@ -1,10 +1,21 @@
 # ExpiryService
+Receive notifications when provider services expires
 
+**Features** of [ExpiryService]():
+- Receive notifications when services expires
+- Provides an API interface to dynamically update provider data
+- Get mail or telegram notifications
+- Supports Provider AldiTalk and Netzclub
 
 ## Installation
 
-install [ExpiryService]() from source
+install [ExpiryService]() with pip
 
+<pre><code>
+pip3 install ExpiryService
+</code></pre>
+
+or from source 
 <pre><code>
 sudo python3 setup.py install
 </code></pre>
