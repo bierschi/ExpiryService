@@ -18,7 +18,7 @@ class BEAgent(DBHandler):
     """
     def __init__(self, postgres=False, **params):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class BEAgent')
+        self.logger.info('Create class BEAgent')
 
         # get params
         self.dbparams = dict()
@@ -39,7 +39,6 @@ class BEAgent(DBHandler):
                 self.sender = self.mailparams['sender']
                 self.password = self.mailparams['password']
                 self.mail = Mail(smtp_server=self.smtp, port=self.port)
-                self.mail.login(self.sender, self.password)
             else:
                 self.logger.error("Mail params are None")
         else:
@@ -99,7 +98,7 @@ class BEAgent(DBHandler):
         try:
             providers = self.dbfetcher.all(sql=sql)
         except Exception as e:
-            self.logger.error("Exception! {}".format(e))
+            self.logger.error("Internal Database Error. {}".format(e))
             return []
 
         return providers
@@ -144,19 +143,46 @@ class BEAgent(DBHandler):
         """
         return provider.data_usage_overview()
 
-    def check_creditbalance_limit(self):
+    def is_creditbalance_under_min(self, provider, username, consumption):
+        """ checks if the creditbalance has reached the database minimum balance
+
+        :return: True if minimum was reached, else False
         """
 
-        :return:
+        min_balance_sql = "Select min_balance from {} where provider = %s and username = %s".format(self.database_table)
+
+        try:
+            min_balance = self.dbfetcher.all(sql=min_balance_sql, data=(provider, username))
+        except Exception as ex:
+            self.logger.error("Internal Database Error. {}".format(ex))
+            return False
+
+        print(min_balance)
+        current_creditbalance = consumption['creditbalance']
+        if current_creditbalance <= min_balance:
+            return True
+        else:
+            return False
+
+    def prepare_creditbalance_min_mail(self, consumption):
+        """ prepares the creditbalance minimum mail with consumption data
+
+        :return: creditbalance minimum string
         """
-        pass
+        self.logger.info("Prepare the creditbalance minimum mail")
+
+        consumption_str = "Name: {} \nNumber: {}\ncreditbalance: {}\nData Volume: {} {}\nEnd Date: {}".format(
+            consumption['name'], consumption['number'], consumption['creditbalance'], consumption['remaining_volume'],
+            consumption['total_volume'], consumption['end_date'])
+
+        return consumption_str
 
     def prepare_notification_mail(self, consumption, data_usage):
         """ prepares the notification mail with consumption and data usage data
 
         :return: notification string
         """
-        self.logger.info("prepare notification mail")
+        self.logger.info("Prepare weekly notification mail")
 
         consumption_str = "Name: {} \nNumber: {}\ncreditbalance: {}\nData Volume: {} {}\nEnd Date: {}".format(
             consumption['name'], consumption['number'], consumption['creditbalance'], consumption['remaining_volume'],
@@ -173,19 +199,20 @@ class BEAgent(DBHandler):
 
         return consumption_str + data_usage_str
 
-    def send_notification_mail(self, receivers, notification_str):
+    def send_notification_mail(self, receivers, subject_str, notification_str):
         """ sends the notification mail to given receivers
 
         :param receivers: receiver string from database
+        :param subject_str: subject header string
         :param notification_str: notification str for email
         """
         receiver_list = receivers.split(';')
         for receiver in receiver_list:
             self.logger.info("Send Mail to {}".format(receiver))
             self.mail.new_message()
-            self.mail.set_subject("Consumption Overview")
+            self.mail.set_subject(subject_str)
             self.mail.set_body(str(notification_str))
-            self.mail.send(receiver=receiver)
+            self.mail.send(username=self.sender, password=self.password, receiver=receiver)
 
     def check_data_from_providers(self, notify=False):
         """ checks data from registered database providers
@@ -199,19 +226,29 @@ class BEAgent(DBHandler):
                     logged_in_provider = self.__login_provider(provider=provider_instance,
                                                                username=registered_provider[1],
                                                                password=registered_provider[2])
+                    # get data from providers
                     consumption = self.get_consumption_data(provider=logged_in_provider)
                     data_usage = self.get_data_usage_overview(provider=logged_in_provider)
 
+                    # send mail if creditbalance minimum reached
+                    if self.is_creditbalance_under_min(provider=registered_provider[0], username=registered_provider[1], consumption=consumption):
+                        self.logger.info("Creditbalance under minimum")
+                        creditbalance_str = self.prepare_creditbalance_min_mail(consumption=consumption)
+                        self.send_notification_mail(receivers=registered_provider[5],
+                                                    subject_str="Creditbalance minimum reached",
+                                                    notification_str=creditbalance_str)
+                    # send weekly reminder mails to receivers
                     if notify:
                         notification_str = self.prepare_notification_mail(consumption=consumption, data_usage=data_usage)
-                        self.send_notification_mail(registered_provider[5], notification_str)
+                        self.send_notification_mail(receivers=registered_provider[5], subject_str="Consumption Overview",
+                                                    notification_str=notification_str)
 
                 except ProviderInstanceError as ex:
                     self.logger.error("ProviderInstanceError: {}".format(ex))
                 except ProviderLoginError as ex:
                     self.logger.error("ProviderLoginError: {}".format(ex))
         else:
-            self.logger.error("registered provider list from database is empty!")
+            self.logger.error("Registered provider list from database is empty!")
 
     def __run(self):
         """ beagent run thread
