@@ -153,13 +153,18 @@ class BEAgent(DBHandler):
 
         try:
             min_balance = self.dbfetcher.all(sql=min_balance_sql, data=(provider, username))
+            min_balance = min_balance[0][0]
         except Exception as ex:
             self.logger.error("Internal Database Error. {}".format(ex))
             return False
 
-        print(min_balance)
         current_creditbalance = consumption['creditbalance']
-        if current_creditbalance <= min_balance:
+        if "€" in current_creditbalance:
+            current_creditbalance = current_creditbalance.replace("€", "")
+        if "," in current_creditbalance:
+            current_creditbalance = current_creditbalance.replace(",", ".")
+
+        if float(current_creditbalance) <= min_balance:
             return True
         else:
             return False
@@ -231,8 +236,11 @@ class BEAgent(DBHandler):
                     data_usage = self.get_data_usage_overview(provider=logged_in_provider)
 
                     # send mail if creditbalance minimum reached
-                    if self.is_creditbalance_under_min(provider=registered_provider[0], username=registered_provider[1], consumption=consumption):
-                        self.logger.info("Creditbalance under minimum")
+                    if self.is_creditbalance_under_min(provider=registered_provider[0], username=registered_provider[1],
+                                                       consumption=consumption):
+                        self.logger.info("Creditbalance under minimum for provider {} and username {}"
+                                         .format(registered_provider[0], registered_provider[1]))
+                        # TODO check reminder delay for sending email
                         creditbalance_str = self.prepare_creditbalance_min_mail(consumption=consumption)
                         self.send_notification_mail(receivers=registered_provider[5],
                                                     subject_str="Creditbalance minimum reached",

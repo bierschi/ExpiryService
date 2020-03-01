@@ -30,19 +30,13 @@ class Mail:
 
         self.msg = None
 
-    def __del__(self):
-        """ destructor
-
-        """
-        if self.server:
-            self.quit()
-
     def connect(self, smtp_server, port):
         """ connects to the smtp server with given port
 
         :param smtp_server: smtp server host
         :param port: port
         """
+        self.logger.info("Connect to mail server")
         self.server.connect(host=smtp_server, port=port)
 
         self.context = ssl.create_default_context()
@@ -101,6 +95,8 @@ class Mail:
             self.msg['From'] = username
             self.msg['To'] = receiver
             try:
+                self.connect(smtp_server=self.smtp_server, port=self.port)
+
                 if self.login(username=username, password=password):
                     self.logger.info("Authentication to Mail Server was successful")
                     self.server.sendmail(username, receiver, self.msg.as_string())
