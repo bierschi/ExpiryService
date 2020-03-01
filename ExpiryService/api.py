@@ -466,3 +466,17 @@ class APIHandler(DBHandler):
         else:
             self.logger.error("Bad DELETE Request to route /notification/mail/")
             return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
+
+    def get_mail_reminder_delay(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def update_mail_reminder_delay(self):
+        """
+
+        :return:
+        """
+        pass

@@ -58,6 +58,12 @@ class ExpiryService:
         self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/',  endpoint_name='delete_mail_notification',
                                  method="DELETE",   handler=self.api.delete_mail_notification)
 
+        # reminder delay
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/reminder/', endpoint_name='get_mail_reminder_delay',
+                                 method="GET", handler=self.api.get_mail_reminder_delay)
+        self.router.add_endpoint(endpoint='/api/' + self.version + '/notification/mail/reminder/', endpoint_name='update_mail_reminder_delay',
+                                 method="GET", handler=self.api.update_mail_reminder_delay)
+
     def run(self, host='0.0.0.0', port=None, debug=None):
         """ runs the ExpiryService application on given port
 

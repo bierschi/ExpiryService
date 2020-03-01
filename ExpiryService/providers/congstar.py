@@ -74,5 +74,5 @@ class Congstar(Provider):
 
 if __name__ == '__main__':
     congstar = Congstar()
-    if congstar.login(username="2204788122", password="8v8q7Hnh"):
+    if congstar.login(username="", password=""):
         congstar.current_consumption()
