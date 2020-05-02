@@ -67,10 +67,11 @@ class DBHandler:
 
         # create table if not exists
         self.logger.info("create Table {}".format(self.database_table))
-        self.dbcreator.build(obj=Table(self.database_table,   Column(name="provider", type="text"),
-                                                              Column(name="username", type="text"),
-                                                              Column(name="password", type="text"),
-                                                              Column(name="min_balance", type="real"),
-                                                              Column(name="usage", type="text"),
-                                                              Column(name="notifyer", type="text"),
-                                                              Column(name="last_reminder", type="text")))
+        self.dbcreator.build(obj=Table(self.database_table,   Column(name="provider",       type="text"),
+                                                              Column(name="username",       type="text"),
+                                                              Column(name="password",       type="text"),
+                                                              Column(name="min_balance",    type="real"),
+                                                              Column(name="usage",          type="text"),
+                                                              Column(name="notifyer",       type="text"),
+                                                              Column(name="last_reminder",  type="text"),
+                                                              Column(name="reminder_delay", type="text")))

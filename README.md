@@ -5,7 +5,7 @@ Receive notifications when provider services expires
 - Receive notifications when services expires
 - Provides an API interface to dynamically update provider data
 - Get mail or telegram notifications
-- Supports Provider AldiTalk and Netzclub
+- Currently Provider AldiTalk and Netzclub are supported
 
 ## Installation
 
@@ -28,6 +28,7 @@ Print the available arguments for ExpiryService
 expiryservice --help
 </code></pre>
 
+## API
 
 ## Logs
 

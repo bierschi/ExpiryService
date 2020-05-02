@@ -1,14 +1,11 @@
 import logging
 import argparse
-import configparser
+
 from ExpiryService.routes.router import Router
 from ExpiryService.api import APIHandler
 from ExpiryService.utils import Logger
 from ExpiryService.beagent import BEAgent
 from ExpiryService import ROOT_DIR, __version__
-
-config = configparser.ConfigParser()
-config.read(ROOT_DIR + '/config/cfg.ini')
 
 
 class ExpiryService:
@@ -76,13 +73,20 @@ class ExpiryService:
 
 
 def main():
+    usage1 = "USAGE: \n\t\t expiryservice --host 127.0.0.1 --port 8091 -Msmtp smtp.web.de --Mport 587 --Msender " \
+             "john@web.de --Mpassword jane"
+
+    usage2 = ""
+
+    description = "Receive notifications when provider services expires. \n\n {}{}".format(usage1, usage2)
 
     # parse arguments
-    parser = argparse.ArgumentParser(description="Command line arguments for the application ExpiryService")
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
     # arguments for the application
-    parser.add_argument('-H', '--host',       type=str, help='Hostname for the application')
-    parser.add_argument('-P', '--port',       type=int, help='Port for the application')
-    parser.add_argument('-L', '--log-folder', type=str, help='Log folder for the application ExpiryService')
+    parser.add_argument('-H', '--host',       type=str, help='Hostname for the application', required=True)
+    parser.add_argument('-P', '--port',       type=int, help='Port for the application', required=True)
 
     # arguments for the postgres database
     parser.add_argument('-DBH', '--dbhost',     type=str, help='Hostname for the database connection')
@@ -97,10 +101,15 @@ def main():
     parser.add_argument('-MSe', '--Msender',   type=str, help='Sender email address')
     parser.add_argument('-MPa', '--Mpassword', type=str, help='Sender email address password')
 
-    # arguments for telegram notification
+    # arguments for the telegram notification
     # TODO
+    # argument for the logging folder
+    parser.add_argument('-l', '--log-folder', type=str, help='Log folder for the application ExpiryService')
 
+    # argument for the current version
     parser.add_argument('-v', '--version', action='version', version=__version__, help='shows the current version')
+
+    # parse all arguments
     args = parser.parse_args()
 
     params = dict()
@@ -136,7 +145,7 @@ def main():
                                        'dbname': dbname})
 
     if (args.Msmtp and args.Mport and args.Msender and args.Mpassword) is None:
-        print("No mail server params available")
+        print("No mail server params provided")
         params.setdefault('mail', {'smtp': args.Msmtp, 'port': args.Mport, 'sender': args.Msender, 'password': args.Mpassword})
     else:
         msmtp     = args.Msmtp

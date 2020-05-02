@@ -1,11 +1,12 @@
 import logging
 import threading
+from time import sleep, time
+
 from ExpiryService.dbhandler import DBHandler
 from ExpiryService.notification import Mail
 from ExpiryService.providers import Provider, AldiTalk, Netzclub
 from ExpiryService.exceptions import ProviderInstanceError, ProviderLoginError
 from ExpiryService.scheduler import Scheduler
-from time import sleep
 
 
 class BEAgent(DBHandler):
@@ -52,11 +53,12 @@ class BEAgent(DBHandler):
 
         # create scheduler thread
         self.scheduler = Scheduler()
-        self.scheduler.periodic(3600, self.check_data_from_providers, args=(True, ))
+        # providers weekly check
+        self.scheduler.periodic(3600, self.check_data_from_providers, args=(False, ))
 
         self.__schedule_thread = threading.Thread(target=self.scheduler.run, args=(True, ))
-        self.__schedule_thread.start()
 
+        # provider minimum check
         self.provider_check_interval = 600
 
     def __del__(self):
@@ -79,6 +81,8 @@ class BEAgent(DBHandler):
 
             else:
                 raise TypeError("'daemon' must be type of boolean")
+
+        self.__schedule_thread.start()
 
     def stop(self):
         """ stops the beagent run thread
@@ -128,6 +132,60 @@ class BEAgent(DBHandler):
                 raise ProviderLoginError("Failed to login to provider {}".format(provider))
         else:
             raise ProviderInstanceError("Could not return logged in provider instance")
+
+    def get_last_reminder_ts(self, provider, username):
+        """
+
+        :return:
+        """
+
+        reminder_sql = "select last_reminder from {} where provider = %s and username = %s".format(self.database_table)
+
+        try:
+            last_reminder = self.dbfetcher.all(sql=reminder_sql, data=(provider, username))
+            last_reminder = last_reminder[0][0]
+
+            if last_reminder is not None:
+                return last_reminder
+            else:
+                return last_reminder
+        except Exception as e:
+            self.logger.error("Internal Database Error. {}".format(e))
+            return None
+
+    def set_last_reminder_ts(self, provider, username):
+        """ sets the last reminder timestamp in database table
+
+        :param provider: provider name
+        :param username: username
+        """
+        update_reminder_sql = "update {} set last_reminder = %s where provider = %s and username = %s".format(self.database_table)
+
+        now_ts = time()
+        try:
+            self.dbinserter.row(sql=update_reminder_sql, data=(now_ts, provider, username))
+        except Exception as ex:
+            self.logger.error(ex)
+
+    def get_reminder_delay(self, provider, username):
+        """
+
+        :return:
+        """
+        reminder_delay_sql = "select reminder_delay from {} where provider = %s and username = %s".format(self.database_table)
+
+        try:
+            reminder_delay = self.dbfetcher.all(sql=reminder_delay_sql, data=(provider, username))
+            reminder_delay = reminder_delay[0][0]
+
+            if reminder_delay is not None:
+                print(reminder_delay)
+                print(type(reminder_delay))
+                pass
+            else:
+                pass
+        except Exception as e:
+            self.logger.error("Internal Database Error. {}".format(e))
 
     def get_consumption_data(self, provider):
         """ get the consumption data dict from given provider
@@ -238,17 +296,27 @@ class BEAgent(DBHandler):
                     # send mail if creditbalance minimum reached
                     if self.is_creditbalance_under_min(provider=registered_provider[0], username=registered_provider[1],
                                                        consumption=consumption):
-                        self.logger.info("Creditbalance under minimum for provider {} and username {}"
-                                         .format(registered_provider[0], registered_provider[1]))
+                        self.logger.info("Creditbalance under minimum for provider {} and username {} with usage: {}"
+                                         .format(registered_provider[0], registered_provider[1], registered_provider[4]))
+
                         # TODO check reminder delay for sending email
+                        last_ts = self.get_last_reminder_ts(provider=registered_provider[0], username=registered_provider[1])
+
                         creditbalance_str = self.prepare_creditbalance_min_mail(consumption=consumption)
+
+                        # set last reminder timestamp
+                        self.set_last_reminder_ts(provider=registered_provider[0], username=registered_provider[1])
+
                         self.send_notification_mail(receivers=registered_provider[5],
-                                                    subject_str="Creditbalance minimum reached",
+                                                    subject_str="Creditbalance minimum reached for {}".format(registered_provider[4]),
                                                     notification_str=creditbalance_str)
                     # send weekly reminder mails to receivers
                     if notify:
+                        self.logger.info("Weekly reminder for {} with usage: {}".format(registered_provider[1],
+                                                                                      registered_provider[4]))
                         notification_str = self.prepare_notification_mail(consumption=consumption, data_usage=data_usage)
-                        self.send_notification_mail(receivers=registered_provider[5], subject_str="Consumption Overview",
+                        self.send_notification_mail(receivers=registered_provider[5],
+                                                    subject_str="Consumption Overview for {}".format(registered_provider[4]),
                                                     notification_str=notification_str)
 
                 except ProviderInstanceError as ex:

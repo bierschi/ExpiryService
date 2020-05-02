@@ -53,13 +53,15 @@ pipeline {
                         sshPublisher(publishers: [sshPublisherDesc(configName: 'christian@server', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: 'sudo pip3 install projects/ExpiryService/$BUILD_NUMBER/ExpiryService-*.whl', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: 'ExpiryService/$BUILD_NUMBER', remoteDirectorySDF: false, removePrefix: 'dist', sourceFiles: 'dist/*.whl')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
                     }
                 }
-                 stage('Deploy To PyPI') {
-                    when { branch "release/*" }
 
+                stage('Deploy to PyPI') {
+                    when {
+                        expression { "${env.GIT_BRANCH}" =~ "origin/release/" }
+                        }
                     steps {
-                        echo 'Deploy ExpiryService to Python Package Index'
+                        echo 'Deploy to PyPI'
+                        sh "python3 -m twine upload dist/*"
                     }
                 }
-
     }
 }
