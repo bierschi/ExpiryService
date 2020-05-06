@@ -10,7 +10,7 @@ from ExpiryService.scheduler import Scheduler
 
 
 class BEAgent(DBHandler):
-    """ class BEAgent to provide the logical part from the expryservice app
+    """ class BEAgent to provide the logical part from the expiryservice app
 
     USAGE:
             beagent = BEAgent(postgres=False, **params)
@@ -48,15 +48,12 @@ class BEAgent(DBHandler):
         # create beagent run thread
         self.__thread = threading.Thread(target=self.__run, daemon=False)
 
-        # check if local database tables exists
-        self._create_local_db_tables()
-
         # create scheduler thread
         self.scheduler = Scheduler()
         # providers weekly check
-        self.scheduler.periodic(3600, self.check_data_from_providers, args=(False, ))
+        #self.scheduler.periodic(3600, self.check_data_from_providers, args=(False, ))
 
-        self.__schedule_thread = threading.Thread(target=self.scheduler.run, args=(True, ))
+        #self.__schedule_thread = threading.Thread(target=self.scheduler.run, args=(True, ))
 
         # provider minimum check
         self.provider_check_interval = 600

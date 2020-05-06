@@ -19,7 +19,7 @@ class ExpiryServiceTelegram:
             estelegram.new_msg()
 
     """
-    def __init__(self, token):
+    def __init__(self, token, chatid):
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('Create class ExpiryServiceTelegram')
 

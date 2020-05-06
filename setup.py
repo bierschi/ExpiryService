@@ -42,7 +42,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            'expiryservice = ExpiryService.expiryservice:main'
+            'ExpiryService = ExpiryService.expiryservice:main'
         ],
     },
     zip_safe=False,
