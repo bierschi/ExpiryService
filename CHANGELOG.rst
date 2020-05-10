@@ -1,2 +1,2 @@
-- 07.01.2020: development start
-
+- 07.01.2020: Development start
+- 10.05.2020: Updated the version to 1.0.1
