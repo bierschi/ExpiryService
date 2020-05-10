@@ -12,7 +12,8 @@ class Validator:
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('create class Validator')
 
-    def provider(self, provider):
+    @staticmethod
+    def provider(provider):
         """ checks if ExpiryService supports given provider
 
         :param provider: provider string
@@ -23,7 +24,8 @@ class Validator:
         else:
             return False
 
-    def username(self, provider, username):
+    @staticmethod
+    def username(provider, username):
         """ checks if username of given provider is valid
 
         :param provider: provider string
@@ -44,7 +46,8 @@ class Validator:
         elif provider == 'congstar':
             return True
 
-    def balance(self, balance):
+    @staticmethod
+    def balance(balance):
         """ checks if balance is positive
 
         :param balance: string of minimum credit balance
@@ -56,7 +59,8 @@ class Validator:
         else:
             return False
 
-    def notifyer(self, notifyer):
+    @staticmethod
+    def notifyer(notifyer):
         """ checks if notifyer includes the char '@'
 
         :param notifyer: notifyer string

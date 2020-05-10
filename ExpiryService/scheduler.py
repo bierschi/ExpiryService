@@ -11,6 +11,7 @@ class Scheduler:
     USAGE:
             scheduler = Scheduler()
             scheduler.schedule(func, startts, *args)
+            scheduler.periodic(5, test, 'test_message')
     """
 
     @functools.total_ordering
@@ -44,6 +45,14 @@ class Scheduler:
         cv = self._cv = threading.Condition(threading.Lock())
         tasks = self._tasks = []
 
+        self._lock = threading.Lock()
+        self._timer = None
+        self.function = None
+        self.interval = None
+        self.args = None
+        self.kwargs = None
+        self._stopped = True
+
         def run():
             while True:
                 with cv:
@@ -56,6 +65,7 @@ class Scheduler:
                             if timeout <= 0:
                                 task = heapq.heappop(tasks)
                                 break
+
                         cv.wait(timeout=timeout)
                 # self.logger.info("Starting new task thread")
                 threading.Thread(target=task.func, args=task.args).start()
@@ -63,8 +73,8 @@ class Scheduler:
         threading.Thread(target=run, name='Scheduler').start()
 
     def schedule(self, func, startts, *args):
-        """Schedule a task that will run fn at or after start (which must be a
-        datetime object) and return an object representing that task.
+        """Schedule a task that will run fn at or after start (which must be a datetime object) and return an
+        object representing that task.
 
         """
 
@@ -90,3 +100,50 @@ class Scheduler:
             return True
         else:
             return False
+
+    def periodic(self, interval, function, *args, **kwargs):
+        """ schedules a periodic task
+
+        :param interval: interval
+        :param function: function handler
+        :param args: args
+        :param kwargs: kwargs
+        """
+
+        self.interval = interval
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+        # start the periodic task
+        self._start_periodic()
+
+    def _start_periodic(self, from_run=False):
+        """ starts the periodic task through the Timer object
+
+        :param from_run: from run boolean
+        """
+        self._lock.acquire()
+        if from_run or self._stopped:
+            self._stopped = False
+            self._timer = threading.Timer(self.interval, self._run)
+            self._timer.start()
+            self._lock.release()
+
+    def _run(self):
+        """ runs the function handler
+
+        """
+        self._start_periodic(from_run=True)
+        self.function(*self.args, **self.kwargs)
+
+    def stop_periodic(self):
+        """ stops the periodic task
+
+        """
+        self._lock.acquire()
+        self._stopped = True
+        self._timer.cancel()
+        self._lock.release()
+
+

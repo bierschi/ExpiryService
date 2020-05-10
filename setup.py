@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+
 from ExpiryService import __version__, __author__, __email__, __license__, __title__
 
 with open('requirements.txt') as f:
@@ -25,7 +26,7 @@ setup(
     include_package_data=True,
     install_requires=required,
     python_requires=">=3",
-    keywords=["expiryservice", "expire", "service", "notification"],
+    keywords=["expiryservice", "expire", "service", "notification", "AldiTalk", "Netzclub"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

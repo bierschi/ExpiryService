@@ -1,5 +1,6 @@
 import logging
-from ExpiryService.db.connector import DBConnector
+
+from ExpiryService.db import DBConnector
 from ExpiryService.exceptions import DBCreatorError
 
 
@@ -12,7 +13,7 @@ class Database:
     """
     def __init__(self, name):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class Database')
+        self.logger.info('Create class Database')
 
         self.name = name
 
@@ -200,7 +201,7 @@ class DBCreator(DBConnector):
     """
     def __init__(self):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class DBCreator')
+        self.logger.info('Create class DBCreator')
 
         # init connector base class
         super().__init__()

@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+
 from ExpiryService.db.context import SQLiteCursorContextManager, SQLiteConnectionContextManager
 from ExpiryService.exceptions import DBConnectorError
 
@@ -15,7 +16,7 @@ class SQLite:
 
     def __init__(self):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info("create class SQLite")
+        self.logger.info("Create class SQLite")
 
     def __del__(self):
         """ destructor

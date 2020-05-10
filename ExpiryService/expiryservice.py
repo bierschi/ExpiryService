@@ -3,8 +3,9 @@ import argparse
 
 from ExpiryService.routes import Router
 from ExpiryService.api import APIHandler
+from ExpiryService.notification import ExpiryServiceTelegram
 from ExpiryService.utils import Logger
-from ExpiryService import BEAgent
+from ExpiryService import ProviderCheck
 from ExpiryService import __version__
 
 
@@ -13,18 +14,18 @@ class ExpiryService:
 
     USAGE:
             expiryservice = ExpiryService()
+            expiryservice.run()
 
     """
-    def __init__(self, name, postgres=False, frontend=True, version=1, **params):
+    def __init__(self, name, token, chatid, frontend=True, version=1, **params):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class ExpiryService')
+        self.logger.info('Create class ExpiryService')
 
         self.name = name
         self.frontend = frontend
         self.version = 'v' + str(version)
-
-        # instance for the backend agent
-        self.beagent = BEAgent(postgres=postgres, **params)
+        self.token = token
+        self.chatid = chatid
 
         # handler for specific api calls
         self.api = APIHandler()
@@ -35,10 +36,17 @@ class ExpiryService:
         if self.frontend:
             self.router.add_endpoint('/', 'index', method="GET", handler=self.api.index)
 
-        ## api routes
-        self.setup_api()
+        # setup api endpoints
+        self.setup_api_endpoints()
 
-    def setup_api(self):
+        # instance for the providercheck agent
+        self.providercheck = ProviderCheck(**params)
+
+        if (self.token and self.chatid) is not None:
+            # instance for telegram
+            self.telegram = ExpiryServiceTelegram(token=self.token, chatid=self.chatid)
+
+    def setup_api_endpoints(self):
         """ setup the api routes for the application
 
         """
@@ -79,7 +87,7 @@ class ExpiryService:
         :param port: port for the webserver
         :param debug: debug mode true or false
         """
-        self.beagent.start()
+        self.providercheck.start()
         self.router.run(host=host, port=port, debug=debug)
 
 
@@ -96,8 +104,8 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # arguments for the application
-    parser.add_argument('-H', '--host',       type=str, help='Hostname for the application', required=True)
-    parser.add_argument('-P', '--port',       type=int, help='Port for the application', required=True)
+    parser.add_argument('-H', '--host',         type=str, help='Hostname for the application', required=True)
+    parser.add_argument('-P', '--port',         type=int, help='Port for the application', required=True)
 
     # arguments for the postgres database
     parser.add_argument('-DBH', '--dbhost',     type=str, help='Hostname for the database connection')
@@ -107,19 +115,20 @@ def main():
     parser.add_argument('-DB',  '--dbname',     type=str, help='Database name')
 
     # arguments for the mail server
-    parser.add_argument('-MS', '--Msmtp',      type=str, help='SMTP email server')
-    parser.add_argument('-MP', '--Mport',      type=int, help='SMTP Port')
-    parser.add_argument('-MSe', '--Msender',   type=str, help='Sender email address')
-    parser.add_argument('-MPa', '--Mpassword', type=str, help='Sender email address password')
+    parser.add_argument('-MS', '--msmtp',       type=str, help='SMTP email server')
+    parser.add_argument('-MP', '--mport',       type=int, help='SMTP Port')
+    parser.add_argument('-MSE', '--msender',    type=str, help='Sender email address')
+    parser.add_argument('-MPA', '--mpassword',  type=str, help='Sender email address password')
 
     # arguments for the telegram notification
-    parser.add_argument('-t', '--token', type=str, help='Provide the telegram token')
+    parser.add_argument('-T', '--token',        type=str, help='Provide the telegram token')
+    parser.add_argument('-C', '--chatid',        type=int, help='Telegram chat id')
 
     # argument for the logging folder
-    parser.add_argument('-l', '--log-folder', type=str, help='Log folder for the application ExpiryService')
+    parser.add_argument('-L', '--log-folder',   type=str, help='Log folder for the application')
 
     # argument for the current version
-    parser.add_argument('-v', '--version', action='version', version=__version__, help='Shows the current version')
+    parser.add_argument('-v', '--version',      action='version', version=__version__, help='Shows the current version')
 
     # parse all arguments
     args = parser.parse_args()
@@ -141,38 +150,19 @@ def main():
     else:
         log_folder = args.log_folder
 
-    if (args.dbhost and args.dbport and args.dbuser and args.dbpassword and args.dbname) is None:
-        print("Local sqlite database will be used")
-        postgres = False
-        params.setdefault('database', {'host': args.dbhost, 'port': args.dbport, 'username': args.dbuser, 'password':
-            args.dbpassword, 'dbname': args.dbname})
-    else:
-        dbhost = args.dbhost
-        dbport = args.dbport
-        dbusername = args.dbuser
-        dbpassword = args.dbpassword
-        dbname = args.dbname
-        postgres = True
-        params.setdefault('database', {'host': dbhost, 'port': dbport, 'username': dbusername, 'password': dbpassword,
-                                       'dbname': dbname})
+    # set database params
+    params.setdefault('database', {'host': args.dbhost, 'port': args.dbport, 'username': args.dbuser,
+                                   'password': args.dbpassword, 'dbname': args.dbname})
 
-    if (args.Msmtp and args.Mport and args.Msender and args.Mpassword) is None:
-        print("No mail server params provided")
-        params.setdefault('mail', {'smtp': args.Msmtp, 'port': args.Mport, 'sender': args.Msender, 'password': args.Mpassword})
-    else:
-        msmtp     = args.Msmtp
-        mport     = args.Mport
-        msender   = args.Msender
-        mpassword = args.Mpassword
-
-        params.setdefault('mail', {'smtp': msmtp, 'port': mport, 'sender': msender, 'password': mpassword})
+    # set mail params
+    params.setdefault('mail', {'smtp': args.msmtp, 'port': args.mport, 'sender': args.msender, 'password': args.mpassword})
 
     # set up logger instance
     logger = Logger(name='ExpiryService', level='info', log_folder=log_folder)
-    logger.info("start application ExpiryService")
+    logger.info("Start Application ExpiryService")
 
     # create application instance
-    expiryservice = ExpiryService(name="ExpiryService", postgres=postgres, frontend=False, **params)
+    expiryservice = ExpiryService(name="ExpiryService", token=args.token, chatid=args.chatid, frontend=False, **params)
 
     # run the application
     expiryservice.run(host=host, port=port)

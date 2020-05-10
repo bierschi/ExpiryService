@@ -12,6 +12,7 @@ class DBHandler:
             dbhandler = DBHandler()
 
     """
+
     def __init__(self, **dbparams):
         self.logger = logging.getLogger('ExpiryService')
         self.logger.info('Create class DBHandler')
@@ -21,11 +22,11 @@ class DBHandler:
         # check db params
         if (('host' and 'port' and 'username' and 'password' and 'dbname') in dbparams.keys()) and \
                 (all(value is not None for value in dbparams.values())):
-            self.db_host     = dbparams['host']
-            self.db_port     = dbparams['port']
+            self.db_host = dbparams['host']
+            self.db_port = dbparams['port']
             self.db_username = dbparams['username']
             self.db_password = dbparams['password']
-            self.db_name     = dbparams['dbname']
+            self.db_name = dbparams['dbname']
 
             # connect to postgres database
             if DBConnector.connect_psycopg(host=self.db_host, port=self.db_port, username=self.db_username,
@@ -73,11 +74,12 @@ class DBHandler:
 
         # create table if not exists
         self.logger.info("create Table {}".format(self.database_table))
-        self.dbcreator.build(obj=Table(self.database_table,   Column(name="provider",       type="text"),
-                                                              Column(name="username",       type="text"),
-                                                              Column(name="password",       type="text"),
-                                                              Column(name="min_balance",    type="real"),
-                                                              Column(name="usage",          type="text"),
-                                                              Column(name="notifyer",       type="text"),
-                                                              Column(name="last_reminder",  type="text"),
-                                                              Column(name="reminder_delay", type="text")))
+        self.dbcreator.build(obj=Table(self.database_table, Column(name="provider", type="text"),
+                                                            Column(name="username", type="text"),
+                                                            Column(name="password", type="text"),
+                                                            Column(name="min_balance", type="real"),
+                                                            Column(name="usage", type="text"),
+                                                            Column(name="notifyer", type="text"),
+                                                            Column(name="last_reminder", type="text"),
+                                                            Column(name="reminder_delay", type="text"),
+                                       schema=self.expiryservice_schema))

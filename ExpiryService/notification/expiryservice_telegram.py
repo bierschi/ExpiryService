@@ -57,6 +57,27 @@ class ExpiryServiceTelegram:
         """
         self.dp.add_handler(handler=CommandHandler(command=command, callback=handler))
 
+    def creditbalance(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def notification(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def notify_on_off(self):
+        """
+
+        :return:
+        """
+        pass
+
     @run_async
     def help(self, update, context):
         """ get the description of ExpriyService
@@ -71,9 +92,11 @@ class ExpiryServiceTelegram:
         self.logger.info("User {} with userid: {} requests the help description".format(user.username, user.id))
 
         help_msg = "*Welcome to ExpiryService*\n\nAvailable commands:\n" \
-                   "/: \n" \
-                   "/: \n" \
-                    "/: \n" \
+                   "/creditbalance: Get the credit balance of all registered providers\n" \
+                   "/reminder: Update the reminder time of notifications\n" \
+                   "/providers: Get all registered providers\n" \
+                   "/add_provider: Adds a new provider to the database\n" \
+                   "/delete_provider: Deletes a provider from the database\n" \
                    "/help: Usage of ExpiryService"
 
         context.bot.send_message(chat_id=chat_id, text=help_msg, parse_mode=ParseMode.MARKDOWN)
@@ -89,3 +112,8 @@ class ExpiryServiceTelegram:
         update.message.reply_text('Bye! I hope we can talk again some day.')
 
         return ConversationHandler.END
+
+if __name__ == '__main__':
+    exp = ExpiryServiceTelegram(token="1219643152:AAHXKN6FInQUlXEgXlujj_p8H4H8IutfUKE", chatid=755923632)
+
+    exp.run()

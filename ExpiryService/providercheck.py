@@ -1,5 +1,5 @@
 import logging
-import threading
+from threading import Thread
 from time import sleep, time
 
 from ExpiryService.dbhandler import DBHandler
@@ -9,17 +9,17 @@ from ExpiryService.exceptions import ProviderInstanceError, ProviderLoginError
 from ExpiryService.scheduler import Scheduler
 
 
-class BEAgent(DBHandler):
-    """ class BEAgent to provide the logical part from the expiryservice app
+class ProviderCheck(DBHandler, Thread):
+    """ class ProviderCheck to check data from registered providers
 
     USAGE:
-            beagent = BEAgent(postgres=False, **params)
-            beagent.start()
+            providercheck = ProviderCheck(**params)
+            providercheck.start()
 
     """
-    def __init__(self, postgres=False, **params):
+    def __init__(self, **params):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('Create class BEAgent')
+        self.logger.info('Create class ProviderCheck')
 
         # get params
         self.dbparams = dict()
@@ -27,10 +27,11 @@ class BEAgent(DBHandler):
         self.mailparams = dict()
         self.mailparams.update(params['mail'])
 
-        self.__running = False
+        # init base classes
+        DBHandler.__init__(self, **self.dbparams)
+        Thread.__init__(self)
 
-        # init base class
-        super().__init__(postgres=postgres, **self.dbparams)
+        self._running = True
 
         if ('smtp' and 'port' and 'sender' and 'password') in self.mailparams.keys():
             if (self.mailparams['smtp'] and self.mailparams['port'] and self.mailparams['sender'] and self.mailparams['password']) is not None:
@@ -45,48 +46,24 @@ class BEAgent(DBHandler):
         else:
             self.logger.error("No mail params provided")
 
-        # create beagent run thread
-        self.__thread = threading.Thread(target=self.__run, daemon=False)
-
-        # create scheduler thread
+        # create scheduler instance
         self.scheduler = Scheduler()
+
         # providers weekly check
-        #self.scheduler.periodic(3600, self.check_data_from_providers, args=(False, ))
+        self.scheduler.periodic(3600, self.check_data_from_providers, False)
 
-        #self.__schedule_thread = threading.Thread(target=self.scheduler.run, args=(True, ))
-
-        # provider minimum check
+        # provider data check interval, 10min default
         self.provider_check_interval = 600
 
-    def __del__(self):
-        """ destructor
+    def run(self) -> None:
+        """ run thread for beagent
 
         """
-        if self.__running:
-            self.stop()
 
-    def start(self, daemon=False):
-        """ starts the beagent run thread
+        while self._running:
 
-        """
-        if self.__thread:
-
-            if isinstance(daemon, bool):
-                self.__thread.daemon = daemon
-                self.__running = True
-                self.__thread.start()
-
-            else:
-                raise TypeError("'daemon' must be type of boolean")
-
-        self.__schedule_thread.start()
-
-    def stop(self):
-        """ stops the beagent run thread
-
-        """
-        if self.__thread:
-            self.__running = False
+            sleep(self.provider_check_interval)
+            self.check_data_from_providers(notify=False)
 
     def __get_registered_providers(self):
         """ get all registered providers in database table
@@ -131,9 +108,9 @@ class BEAgent(DBHandler):
             raise ProviderInstanceError("Could not return logged in provider instance")
 
     def get_last_reminder_ts(self, provider, username):
-        """
+        """ get last reminder timestamp from database
 
-        :return:
+        :return: last reminder timestamp
         """
 
         reminder_sql = "select last_reminder from {} where provider = %s and username = %s".format(self.database_table)
@@ -278,7 +255,9 @@ class BEAgent(DBHandler):
         """ checks data from registered database providers
 
         """
+        # get all registered providers from database
         registered_provider_list = self.__get_registered_providers()
+
         if len(registered_provider_list) > 0:
             for registered_provider in registered_provider_list:
                 try:
@@ -323,13 +302,4 @@ class BEAgent(DBHandler):
         else:
             self.logger.error("Registered provider list from database is empty!")
 
-    def __run(self):
-        """ beagent run thread
-
-        """
-
-        while self.__running:
-
-            sleep(self.provider_check_interval)
-            self.check_data_from_providers(notify=False)
 

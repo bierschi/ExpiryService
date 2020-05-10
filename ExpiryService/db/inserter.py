@@ -1,5 +1,6 @@
 import logging
-from ExpiryService.db.connector import DBConnector, Error
+
+from ExpiryService.db import DBConnector, Error
 from ExpiryService.exceptions import DBInserterError, DBIntegrityError
 
 
@@ -14,7 +15,7 @@ class DBInserter(DBConnector):
     """
     def __init__(self):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class DBInserter')
+        self.logger.info('Create class DBInserter')
 
         # init connector base class
         super().__init__()
