@@ -6,5 +6,6 @@ __email__ = "christian.bierschneider@web.de"
 __license__ = "MIT"
 
 import os
+from ExpiryService.providercheck import ProviderCheck
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))

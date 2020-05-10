@@ -1,5 +1,6 @@
 import logging
-from ExpiryService.db.connector import DBConnector
+
+from ExpiryService.db import DBConnector
 
 
 class DBFetcher(DBConnector):
@@ -13,7 +14,7 @@ class DBFetcher(DBConnector):
     """
     def __init__(self):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class DBFetcher')
+        self.logger.info('Create class DBFetcher')
 
         # init connector base class
         super().__init__()

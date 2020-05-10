@@ -5,8 +5,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/expiryservice
-Restart=always
+ExecStart=/usr/local/bin/ExpiryService
 User=christian
 Group=christian
 UMask=002

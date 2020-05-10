@@ -57,7 +57,6 @@ class APIHandler(DBHandler):
             provider_dict = dict()
             provider_dict['provider']     = elem[0]
             provider_dict['username']     = elem[1]
-            provider_dict['password']     = elem[2]
             provider_dict['min_balance']  = elem[3]
             provider_dict['usage']        = elem[4]
             if elem[5] is not None:
@@ -116,6 +115,7 @@ class APIHandler(DBHandler):
                 return Response(status=409, response=json.dumps("Provider was already added"),
                                 mimetype='application/json')
 
+            # TODO add password as hash value into table
             sql = "insert into {} (provider, username, password, min_balance, usage, notifyer) values (%s, %s, %s, %s, %s, %s)".format(
                 self.database_table)
 
@@ -143,8 +143,8 @@ class APIHandler(DBHandler):
 
         self.logger.info("DELETE request to route /provider/")
         if all(key in request.headers.keys() for key in ('Provider', 'Username')):
-            provider    = request.headers['Provider']
-            username    = request.headers['Username']
+            provider = request.headers['Provider']
+            username = request.headers['Username']
 
             # validate given attributes
             if not self.validator.provider(provider=provider):
@@ -301,7 +301,7 @@ class APIHandler(DBHandler):
             return Response(status=400, response=json.dumps("Bad Request Headers"), mimetype='application/json')
 
     def get_mail_notification(self):
-        """ get configured mail notificiations
+        """ get configured mail notifications
 
         :return: Response object
         """

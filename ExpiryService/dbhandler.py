@@ -1,10 +1,8 @@
 import logging
-import configparser
-from ExpiryService.db.connector import DBConnector
-from ExpiryService.db.creator import DBCreator, Table, Column
-from ExpiryService.db.fetcher import DBFetcher
-from ExpiryService.db.inserter import DBInserter
-from ExpiryService import ROOT_DIR
+
+from ExpiryService.db import DBConnector, DBInserter, DBFetcher
+from ExpiryService.db import DBCreator, Schema, Table, Column
+from ExpiryService.exceptions import DBConnectorError
 
 
 class DBHandler:
@@ -14,63 +12,74 @@ class DBHandler:
             dbhandler = DBHandler()
 
     """
-    def __init__(self, postgres=False, **dbparams):
+
+    def __init__(self, **dbparams):
         self.logger = logging.getLogger('ExpiryService')
-        self.logger.info('create class DBHandler')
+        self.logger.info('Create class DBHandler')
 
-        # load config file
-        self.config = configparser.ConfigParser()
-        self.config.read(ROOT_DIR + '/config/cfg.ini')
+        self.database_table = "ExpiryService"
 
-        self.postgres = postgres
+        # check db params
+        if (('host' and 'port' and 'username' and 'password' and 'dbname') in dbparams.keys()) and \
+                (all(value is not None for value in dbparams.values())):
+            self.db_host = dbparams['host']
+            self.db_port = dbparams['port']
+            self.db_username = dbparams['username']
+            self.db_password = dbparams['password']
+            self.db_name = dbparams['dbname']
 
-        # load config file
-        self.config = configparser.ConfigParser()
-        self.config.read(ROOT_DIR + '/config/cfg.ini')
+            # connect to postgres database
+            if DBConnector.connect_psycopg(host=self.db_host, port=self.db_port, username=self.db_username,
+                                           password=self.db_password, dbname=self.db_name, minConn=1, maxConn=39):
 
-        # get schema from cfg.ini
-        self.database_table  = self.config.get('sqlite', 'table')
+                self.dbcreator = DBCreator()
+                self.dbinserter = DBInserter()
+                self.dbfetcher = DBFetcher()
 
-        if self.postgres is False:
-            self.logger.info("create local sqlite database")
-            self.db_name = self.config.get('sqlite', 'name')
-            # instance for db connector
-            DBConnector.connect_sqlite(path='/var/log/ExpiryService' + '/' + self.db_name + '.db')
+                self.postgres = True
+                self.expiryservice_schema = "expiryservice"
 
-        else:
-            if ('host' and 'port' and 'username' and 'password' and 'dbname') in dbparams.keys():
-                self.db_host     = dbparams['host']
-                self.db_port     = dbparams['port']
-                self.db_username = dbparams['username']
-                self.db_password = dbparams['password']
-                self.db_name     = dbparams['dbname']
+                # at start create all necessary tables for ExpiryService
+                self._create_local_db_tables()
+
             else:
-                # get database configs from cfg.ini
-                self.db_host     = self.config.get('database', 'host')
-                self.db_port     = self.config.getint('database', 'port')
-                self.db_username = self.config.get('database', 'username')
-                self.db_password = self.config.get('database', 'password')
-                self.db_name     = self.config.get('database', 'dbname')
+                self.logger.error("DBHandler could not connect to the postgres database")
+                raise DBConnectorError("DBHandler could not connect to the postgres database")
+        else:
+            path = '/var/log/ExpiryService/ExpiryService.db'
 
-            DBConnector.connect_psycopg(host=self.db_host, port=self.db_port, username=self.db_username,
-                                        password=self.db_password, dbname=self.db_name, minConn=1, maxConn=20)
+            if DBConnector.connect_sqlite(path=path):
 
-        # instances for db actions
-        self.dbcreator = DBCreator()
-        self.dbfetcher = DBFetcher()
-        self.dbinserter = DBInserter()
+                self.dbcreator = DBCreator()
+                self.dbinserter = DBInserter()
+                self.dbfetcher = DBFetcher()
+
+                self.postgres = False
+                self.expiryservice_schema = "main"
+
+                # at start create all necessary tables for ExpiryService
+                self._create_local_db_tables()
+            else:
+                self.logger.error("DBHandler could not connect to the sqlite database")
+                raise DBConnectorError("DBHandler could not connect to the sqlite database")
 
     def _create_local_db_tables(self):
         """ creates the local database tables
 
         """
+        # create schema if not exists expiryservice
+        if self.postgres:
+            self.logger.info("Create Schema {}".format(self.expiryservice_schema))
+            self.dbcreator.build(obj=Schema(name=self.expiryservice_schema))
 
         # create table if not exists
         self.logger.info("create Table {}".format(self.database_table))
-        self.dbcreator.build(obj=Table(self.database_table,   Column(name="provider", type="text"),
-                                                              Column(name="username", type="text"),
-                                                              Column(name="password", type="text"),
-                                                              Column(name="min_balance", type="real"),
-                                                              Column(name="usage", type="text"),
-                                                              Column(name="notifyer", type="text"),
-                                                              Column(name="last_reminder", type="text")))
+        self.dbcreator.build(obj=Table(self.database_table, Column(name="provider", type="text"),
+                                                            Column(name="username", type="text"),
+                                                            Column(name="password", type="text"),
+                                                            Column(name="min_balance", type="real"),
+                                                            Column(name="usage", type="text"),
+                                                            Column(name="notifyer", type="text"),
+                                                            Column(name="last_reminder", type="text"),
+                                                            Column(name="reminder_delay", type="text"),
+                                       schema=self.expiryservice_schema))
